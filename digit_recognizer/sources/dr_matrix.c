@@ -131,24 +131,37 @@ void dr_matrix_unchecked_multiplication(const dr_matrix left, const dr_matrix ri
 }
 
 void dr_matrix_multiplication(const dr_matrix left, const dr_matrix right, dr_matrix* result) {
-    DR_ASSERT_MSG(left.width == right.height, "when multiplying the matrix, the number of columns of the left matrix"
+    DR_ASSERT_MSG(left.width == right.height, "when multiplying the matrix, the number of columns of the left matrix "
         "should be equal to the number of rows of the right matrix");
     dr_matrix_assert_compat_elements_and_sizes(left);
     dr_matrix_assert_compat_elements_and_sizes(right);
     dr_matrix_unchecked_multiplication(left, right, result);
 }
 
-bool dr_matrix_unchecked_equals(const dr_matrix left, const dr_matrix right) {
-    if (left.width != right.width || left.height != right.height) {
+bool dr_matrix_unchecked_equals_to_array(
+    const dr_matrix matrix, const size_t width, const size_t height, const DR_FLOAT_TYPE* array) {
+    if (matrix.width != width || matrix.height != height) {
         return false;
     }
-    const size_t size = dr_matrix_unchecked_size(left);
+    const size_t size = width * height;
     for (size_t i = 0; i < size; ++i) {
-        if (left.elements[i] != right.elements[i]) {
+        if (matrix.elements[i] != array[i]) {
             return false;
         }
     }
     return true;
+}
+
+bool dr_matrix_equals_to_array(
+    const dr_matrix matrix, const size_t width, const size_t height, const DR_FLOAT_TYPE* array) {
+    DR_ASSERT_MSG(array && width * height > 0, "comparison of a matrix with an array is possible only if "
+        "the array is not NULL and its size is specified as positive.");
+    dr_matrix_assert_compat_elements_and_sizes(matrix);
+    return dr_matrix_unchecked_equals_to_array(matrix, width, height, array);
+}
+
+bool dr_matrix_unchecked_equals(const dr_matrix left, const dr_matrix right) {
+    return dr_matrix_unchecked_equals_to_array(left, right.width, right.height, right.elements);
 }
 
 bool dr_matrix_equals(const dr_matrix left, const dr_matrix right) {

@@ -16,14 +16,6 @@
 # define DR_MALLOC(sz) malloc(sz)
 #endif
 
-#ifndef DR_CALLOC
-# define DR_CALLOC(n, sz) calloc(n, sz)
-#endif
-
-#ifndef DR_REALLOC
-# define DR_REALLOC(ptr, sz) realloc(ptr, sz)
-#endif
-
 #ifndef DR_FREE
 # define DR_FREE(ptr) free(ptr)
 #endif
@@ -36,4 +28,13 @@
 # define DR_ASSERT_MSG(cond, msg) assert((cond && msg))
 #endif
 
-#endif // !DR_UTILS
+static size_t size_t_len(size_t number) {
+    size_t len = 0;
+    do {
+        ++len;
+        number /= 10;
+    } while(number > 0);
+    return len;
+}
+
+#endif // !DR_UTILS_H

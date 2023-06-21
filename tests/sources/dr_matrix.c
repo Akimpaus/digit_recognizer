@@ -11,16 +11,6 @@ static bool dr_matrix_filled(const dr_matrix matrix, const DR_FLOAT_TYPE val) {
     return true;
 }
 
-static bool dr_matrix_equals_to_array(const dr_matrix matrix, const DR_FLOAT_TYPE array[]) {
-    const size_t matrix_size = dr_matrix_size(matrix);
-    for (size_t i = 0; i < matrix_size; ++i) {
-        if (array[i] != matrix.elements[i]) {
-            return false;
-        }
-    }
-    return true;
-}
-
 UTEST(dr_matrix, dr_matrix_correct_sizes) {
     EXPECT_TRUE(dr_matrix_correct_sizes(1, 1));
     EXPECT_TRUE(dr_matrix_correct_sizes(1, 2));
@@ -191,7 +181,7 @@ UTEST(dr_matrix, create_from_array) {
             1
         };
         dr_matrix matrix = dr_matrix_create_from_array(array, 1, 1);
-        EXPECT_TRUE(dr_matrix_equals_to_array(matrix, array));
+        EXPECT_TRUE(dr_matrix_equals_to_array(matrix, 1, 1, array));
         dr_matrix_free(&matrix);
     }
     {
@@ -201,7 +191,7 @@ UTEST(dr_matrix, create_from_array) {
             7, 8, 9
         };
         dr_matrix matrix = dr_matrix_create_from_array(array, 3, 3);
-        EXPECT_TRUE(dr_matrix_equals_to_array(matrix, array));
+        EXPECT_TRUE(dr_matrix_equals_to_array(matrix, 3, 3, array));
         dr_matrix_free(&matrix);
     }
 }
@@ -337,6 +327,84 @@ UTEST(dr_matrix, multiplication) {
         dr_matrix_free(&right);
         dr_matrix_free(&expected_result);
         dr_matrix_free(&result);
+    }
+}
+
+UTEST(dr_matrix, equals_to_array) {
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            1
+        };
+        dr_matrix left_mat = dr_matrix_create_from_array(left_arr, 1, 1);
+        const DR_FLOAT_TYPE right_arr[] = {
+            1
+        };
+
+        EXPECT_TRUE(dr_matrix_equals_to_array(left_mat, 1, 1, right_arr));
+
+        dr_matrix_free(&left_mat);
+    }
+
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            1, 2,
+            3, 4
+        };
+        dr_matrix left_mat = dr_matrix_create_from_array(left_arr, 2, 2);
+        const DR_FLOAT_TYPE right_arr[] = {
+            1
+        };
+
+        EXPECT_FALSE(dr_matrix_equals_to_array(left_mat, 1, 1, right_arr));
+
+        dr_matrix_free(&left_mat);
+    }
+
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            1
+        };
+        dr_matrix left_mat = dr_matrix_create_from_array(left_arr, 1, 1);
+        const DR_FLOAT_TYPE right_arr[] = {
+            1, 2,
+            3, 4
+        };
+
+        EXPECT_FALSE(dr_matrix_equals_to_array(left_mat, 2, 2, right_arr));
+
+        dr_matrix_free(&left_mat);
+    }
+
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            1, 2,
+            3, 4
+        };
+        dr_matrix left_mat = dr_matrix_create_from_array(left_arr, 2, 2);
+        const DR_FLOAT_TYPE right_arr[] = {
+            1, 2,
+            3, 4
+        };
+
+        EXPECT_TRUE(dr_matrix_equals_to_array(left_mat, 2, 2, right_arr));
+
+        dr_matrix_free(&left_mat);
+    }
+
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            1, 2,
+            2, 4
+        };
+        dr_matrix left_mat = dr_matrix_create_from_array(left_arr, 2, 2);
+        const DR_FLOAT_TYPE right_arr[] = {
+            1, 2,
+            3, 4
+        };
+
+        EXPECT_FALSE(dr_matrix_equals_to_array(left_mat, 2, 2, right_arr));
+
+        dr_matrix_free(&left_mat);
     }
 }
 

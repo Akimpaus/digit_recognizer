@@ -52,6 +52,12 @@ void dr_matrix_multiplication(const dr_matrix left, const dr_matrix right, dr_ma
 
 bool dr_matrix_unchecked_equals(const dr_matrix left, const dr_matrix right);
 
+bool dr_matrix_unchecked_equals_to_array(
+    const dr_matrix matrix, const size_t width, const size_t height, const DR_FLOAT_TYPE* array);
+
+bool dr_matrix_equals_to_array(
+    const dr_matrix matrix, const size_t width, const size_t height, const DR_FLOAT_TYPE* array);
+
 bool dr_matrix_equals(const dr_matrix left, const dr_matrix right);
 
 void dr_matrix_print(const dr_matrix matrix);

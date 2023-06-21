@@ -10,8 +10,10 @@ typedef struct {
     dr_matrix* connections;
 } dr_neural_network;
 
-dr_neural_network dr_neural_network_create(const size_t layers_count, const size_t* layers_sizes); // test
+dr_neural_network dr_neural_network_create(const size_t layers_count, const size_t* layers_sizes);
 
-void dr_neural_network_free(dr_neural_network* neural_network); // test
+void dr_neural_network_free(dr_neural_network* neural_network);
+
+void dr_neural_network_print(const dr_neural_network neural_network);
 
 #endif // DR_NEURAL_NETWORK_H
