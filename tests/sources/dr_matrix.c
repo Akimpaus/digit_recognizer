@@ -1,15 +1,5 @@
 #include <utest.h>
-#include <dr_matrix.h>
-
-static bool dr_matrix_filled(const dr_matrix matrix, const DR_FLOAT_TYPE val) {
-    const size_t size = matrix.width * matrix.height;
-    for (size_t i = 0; i < size; ++i) {
-        if (matrix.elements[i] != val) {
-            return false;
-        }
-    }
-    return true;
-}
+#include "dr_testing_matrix.h"
 
 UTEST(dr_matrix, dr_matrix_correct_sizes) {
     EXPECT_TRUE(dr_matrix_correct_sizes(1, 1));
@@ -74,7 +64,7 @@ UTEST(dr_matrix_fill, fill) {
         EXPECT_TRUE(matrix.elements);
         EXPECT_EQ(matrix.width, 1);
         EXPECT_EQ(matrix.height, 1);
-        EXPECT_TRUE(dr_matrix_filled(matrix, fill_val));
+        EXPECT_TRUE(dr_testing_matrix_filled(matrix, fill_val));
         dr_matrix_free(&matrix);
     }
 
@@ -85,7 +75,7 @@ UTEST(dr_matrix_fill, fill) {
         EXPECT_TRUE(matrix.elements);
         EXPECT_EQ(matrix.width, 3);
         EXPECT_EQ(matrix.height, 5);
-        EXPECT_TRUE(dr_matrix_filled(matrix, fill_val));
+        EXPECT_TRUE(dr_testing_matrix_filled(matrix, fill_val));
         dr_matrix_free(&matrix);
     }
 
@@ -96,7 +86,7 @@ UTEST(dr_matrix_fill, fill) {
         EXPECT_TRUE(matrix.elements);
         EXPECT_EQ(matrix.width, 5);
         EXPECT_EQ(matrix.height, 3);
-        EXPECT_TRUE(dr_matrix_filled(matrix, fill_val));
+        EXPECT_TRUE(dr_testing_matrix_filled(matrix, fill_val));
         dr_matrix_free(&matrix);
     }
 
@@ -107,7 +97,67 @@ UTEST(dr_matrix_fill, fill) {
         EXPECT_TRUE(matrix.elements);
         EXPECT_EQ(matrix.width, 5);
         EXPECT_EQ(matrix.height, 5);
-        EXPECT_TRUE(dr_matrix_filled(matrix, fill_val));
+        EXPECT_TRUE(dr_testing_matrix_filled(matrix, fill_val));
+        dr_matrix_free(&matrix);
+    }
+}
+
+UTEST(dr_matrix, fill_random) {
+    {
+        dr_matrix matrix = dr_matrix_alloc(0, 0);
+        const DR_FLOAT_TYPE min = 0;
+        const DR_FLOAT_TYPE max = 0;
+        dr_matrix_fill_random(&matrix, min, max);
+        EXPECT_FALSE(matrix.elements);
+        EXPECT_EQ(matrix.width, 0);
+        EXPECT_EQ(matrix.height, 0);
+    }
+
+    {
+        dr_matrix matrix = dr_matrix_alloc(1, 1);
+        const DR_FLOAT_TYPE min = 0.3;
+        const DR_FLOAT_TYPE max = 1.5;
+        dr_matrix_fill_random(&matrix, min, max);
+        EXPECT_TRUE(matrix.elements);
+        EXPECT_EQ(matrix.width, 1);
+        EXPECT_EQ(matrix.height, 1);
+        EXPECT_TRUE(dr_testing_matrix_filled_random(matrix, min, max));
+        dr_matrix_free(&matrix);
+    }
+
+    {
+        dr_matrix matrix = dr_matrix_alloc(3, 5);
+        const DR_FLOAT_TYPE min = -1.1;
+        const DR_FLOAT_TYPE max = 5.6;
+        dr_matrix_fill_random(&matrix, min, max);
+        EXPECT_TRUE(matrix.elements);
+        EXPECT_EQ(matrix.width, 3);
+        EXPECT_EQ(matrix.height, 5);
+        EXPECT_TRUE(dr_testing_matrix_filled_random(matrix, min, max));
+        dr_matrix_free(&matrix);
+    }
+
+    {
+        dr_matrix matrix = dr_matrix_alloc(5, 3);
+        const DR_FLOAT_TYPE min = 2.1;
+        const DR_FLOAT_TYPE max = 101.6;
+        dr_matrix_fill_random(&matrix, min, max);
+        EXPECT_TRUE(matrix.elements);
+        EXPECT_EQ(matrix.width, 5);
+        EXPECT_EQ(matrix.height, 3);
+        EXPECT_TRUE(dr_testing_matrix_filled_random(matrix, min, max));
+        dr_matrix_free(&matrix);
+    }
+
+    {
+        dr_matrix matrix = dr_matrix_alloc(5, 5);
+        const DR_FLOAT_TYPE min = -10.01;
+        const DR_FLOAT_TYPE max = -4.3;
+        dr_matrix_fill_random(&matrix, min, max);
+        EXPECT_TRUE(matrix.elements);
+        EXPECT_EQ(matrix.width, 5);
+        EXPECT_EQ(matrix.height, 5);
+        EXPECT_TRUE(dr_testing_matrix_filled_random(matrix, min, max));
         dr_matrix_free(&matrix);
     }
 }
@@ -133,7 +183,7 @@ UTEST(dr_matrix, create_filled) {
         EXPECT_TRUE(matrix.elements);
         EXPECT_EQ(matrix.width, 1);
         EXPECT_EQ(matrix.height, 1);
-        EXPECT_TRUE(dr_matrix_filled(matrix, fill_val));
+        EXPECT_TRUE(dr_testing_matrix_filled(matrix, fill_val));
         dr_matrix_free(&matrix);
     }
 
@@ -143,7 +193,7 @@ UTEST(dr_matrix, create_filled) {
         EXPECT_TRUE(matrix.elements);
         EXPECT_EQ(matrix.width, 3);
         EXPECT_EQ(matrix.height, 5);
-        EXPECT_TRUE(dr_matrix_filled(matrix, fill_val));
+        EXPECT_TRUE(dr_testing_matrix_filled(matrix, fill_val));
         dr_matrix_free(&matrix);
     }
 
@@ -153,7 +203,7 @@ UTEST(dr_matrix, create_filled) {
         EXPECT_TRUE(matrix.elements);
         EXPECT_EQ(matrix.width, 5);
         EXPECT_EQ(matrix.height, 3);
-        EXPECT_TRUE(dr_matrix_filled(matrix, fill_val));
+        EXPECT_TRUE(dr_testing_matrix_filled(matrix, fill_val));
         dr_matrix_free(&matrix);
     }
 
@@ -163,7 +213,7 @@ UTEST(dr_matrix, create_filled) {
         EXPECT_TRUE(matrix.elements);
         EXPECT_EQ(matrix.width, 5);
         EXPECT_EQ(matrix.height, 5);
-        EXPECT_TRUE(dr_matrix_filled(matrix, fill_val));
+        EXPECT_TRUE(dr_testing_matrix_filled(matrix, fill_val));
         dr_matrix_free(&matrix);
     }
 }

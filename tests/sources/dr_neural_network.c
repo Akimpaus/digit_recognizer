@@ -1,10 +1,29 @@
 #include <utest.h>
-#include <dr_neural_network.h>
+#include "dr_testing_neural_network.h"
+
+UTEST(dr_neural_network, valid) {
+    {
+        dr_neural_network nn;
+        nn.layers_count      = 0;
+        nn.layers            = NULL;
+        nn.connections_count = 0;
+        nn.connections       = NULL;
+        EXPECT_FALSE(dr_neural_network_valid(nn));
+    }
+
+    {
+        const size_t layers[]     = { 1, 2, 3 };
+        const size_t layers_count = DR_ARRAY_LENGTH(layers);
+        dr_neural_network nn      = dr_neural_network_create(layers_count, layers);
+        EXPECT_TRUE(dr_neural_network_valid(nn));
+        dr_neural_network_free(&nn);
+    }
+}
 
 UTEST(dr_neural_network, create_free) {
     {
         const size_t layers[]    = { 1, 1 };
-        const size_t layer_count = sizeof(layers) / sizeof(size_t);
+        const size_t layer_count = DR_ARRAY_LENGTH(layers);
         dr_neural_network nn     = dr_neural_network_create(layer_count, layers);
         EXPECT_EQ(nn.layers_count, layer_count);
         EXPECT_EQ(nn.connections_count, layer_count - 1);
@@ -37,7 +56,7 @@ UTEST(dr_neural_network, create_free) {
 
     {
         const size_t layers[]    = { 2, 2 };
-        const size_t layer_count = sizeof(layers) / sizeof(size_t);
+        const size_t layer_count = DR_ARRAY_LENGTH(layers);
         dr_neural_network nn     = dr_neural_network_create(layer_count, layers);
         EXPECT_EQ(nn.layers_count, layer_count);
         EXPECT_EQ(nn.connections_count, layer_count - 1);
@@ -73,7 +92,7 @@ UTEST(dr_neural_network, create_free) {
 
     {
         const size_t layers[]    = { 1, 2, 3 };
-        const size_t layer_count = sizeof(layers) / sizeof(size_t);
+        const size_t layer_count = DR_ARRAY_LENGTH(layers);
         dr_neural_network nn     = dr_neural_network_create(layer_count, layers);
         EXPECT_EQ(nn.layers_count, layer_count);
         EXPECT_EQ(nn.connections_count, layer_count - 1);
@@ -116,5 +135,40 @@ UTEST(dr_neural_network, create_free) {
         EXPECT_EQ(nn.connections_count, 0);
         EXPECT_FALSE(nn.layers);
         EXPECT_FALSE(nn.connections);
+    }
+}
+
+UTEST(dr_neural_network, randomize_weights) {
+    {
+        const size_t layers[]    = { 1, 1 };
+        const size_t layer_count = DR_ARRAY_LENGTH(layers);
+        dr_neural_network nn     = dr_neural_network_create(layer_count, layers);
+        const DR_FLOAT_TYPE min = 0;
+        const DR_FLOAT_TYPE max = 0;
+        dr_neural_network_randomize_weights(nn, min, max);
+        EXPECT_TRUE(dr_testing_neural_network_randomized_weights(nn, min, max));
+        dr_neural_network_free(&nn);
+    }
+
+    {
+        const size_t layers[]    = { 2, 2 };
+        const size_t layer_count = DR_ARRAY_LENGTH(layers);
+        dr_neural_network nn     = dr_neural_network_create(layer_count, layers);
+        const DR_FLOAT_TYPE min = 1.5;
+        const DR_FLOAT_TYPE max = 5;
+        dr_neural_network_randomize_weights(nn, min, max);
+        EXPECT_TRUE(dr_testing_neural_network_randomized_weights(nn, min, max));
+        dr_neural_network_free(&nn);
+    }
+
+    {
+        const size_t layers[]    = { 1, 2, 3 };
+        const size_t layer_count = DR_ARRAY_LENGTH(layers);
+        dr_neural_network nn     = dr_neural_network_create(layer_count, layers);
+        const DR_FLOAT_TYPE min = -0.2;
+        const DR_FLOAT_TYPE max = 0.5;
+        dr_neural_network_randomize_weights(nn, min, max);
+        EXPECT_TRUE(dr_testing_neural_network_randomized_weights(nn, min, max));
+        dr_neural_network_free(&nn);
     }
 }

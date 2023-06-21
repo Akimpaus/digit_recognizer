@@ -25,6 +25,10 @@ void dr_matrix_unchecked_fill(dr_matrix* matrix, const DR_FLOAT_TYPE value);
 
 void dr_matrix_fill(dr_matrix* matrix, const DR_FLOAT_TYPE value);
 
+void dr_matrix_unchecked_fill_random(dr_matrix* matrix, const DR_FLOAT_TYPE min, const DR_FLOAT_TYPE max);
+
+void dr_matrix_fill_random(dr_matrix* matrix, const DR_FLOAT_TYPE min, const DR_FLOAT_TYPE max);
+
 dr_matrix dr_matrix_unchecked_create_filled(const size_t width, const size_t height, const DR_FLOAT_TYPE value);
 
 dr_matrix dr_matrix_create_empty();
@@ -59,6 +63,12 @@ bool dr_matrix_equals_to_array(
     const dr_matrix matrix, const size_t width, const size_t height, const DR_FLOAT_TYPE* array);
 
 bool dr_matrix_equals(const dr_matrix left, const dr_matrix right);
+
+void dr_matrix_print_space(
+    const dr_matrix matrix, const size_t space_open, const size_t space_data, const size_t space_close);
+
+void dr_matrix_print_name_space(const dr_matrix matrix, const char* name,
+    const size_t space_open, const size_t space_data, const size_t space_close);
 
 void dr_matrix_print(const dr_matrix matrix);
 

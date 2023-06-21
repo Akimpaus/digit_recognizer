@@ -47,18 +47,31 @@ void dr_matrix_unchecked_fill(dr_matrix* matrix, const DR_FLOAT_TYPE value) {
     }
 }
 
+void dr_matrix_fill(dr_matrix* matrix, const DR_FLOAT_TYPE value) {
+    DR_ASSERT_MSG(matrix, "attempt to fill null matrix ptr");
+    dr_matrix_assert_compat_elements_and_sizes(*matrix);
+    dr_matrix_unchecked_fill(matrix, value);
+}
+
+void dr_matrix_unchecked_fill_random(dr_matrix* matrix, const DR_FLOAT_TYPE min, const DR_FLOAT_TYPE max) {
+    const size_t matrix_size = dr_matrix_unchecked_size(*matrix);
+    for (size_t i = 0; i < matrix_size; ++i) {
+        matrix->elements[i] = dr_random_float(min, max);
+    }
+}
+
+void dr_matrix_fill_random(dr_matrix* matrix, const DR_FLOAT_TYPE min, const DR_FLOAT_TYPE max) {
+    DR_ASSERT_MSG(matrix, "attempt to fill random null matrix ptr");
+    dr_matrix_assert_compat_elements_and_sizes(*matrix);
+    dr_matrix_unchecked_fill_random(matrix, min, max);
+}
+
 dr_matrix dr_matrix_create_empty() {
     dr_matrix matrix;
     matrix.elements = NULL;
     matrix.width    = 0;
     matrix.height   = 0;
     return matrix;
-}
-
-void dr_matrix_fill(dr_matrix* matrix, const DR_FLOAT_TYPE value) {
-    DR_ASSERT_MSG(matrix, "attempt to fill null matrix ptr");
-    dr_matrix_assert_compat_elements_and_sizes(*matrix);
-    dr_matrix_unchecked_fill(matrix, value);
 }
 
 dr_matrix dr_matrix_unchecked_create_filled(const size_t width, const size_t height, const DR_FLOAT_TYPE value) {
@@ -170,16 +183,31 @@ bool dr_matrix_equals(const dr_matrix left, const dr_matrix right) {
     return dr_matrix_unchecked_equals(left, right);
 }
 
-void dr_matrix_print(const dr_matrix matrix) {
+void dr_matrix_print_space(
+    const dr_matrix matrix, const size_t space_open, const size_t space_data, const size_t space_close) {
     dr_matrix_assert_compat_elements_and_sizes(matrix);
+    dr_print_spaces(space_open);
     printf("%s\n", "[");
     for (size_t i = 0; i < matrix.height; ++i) {
         for (size_t j = 0; j < matrix.width; ++j) {
+            dr_print_spaces(space_data);
             printf("%10.3f ", dr_matrix_get_element(matrix, j, i));
         }
         printf("\n");
     }
+    dr_print_spaces(space_close);
     printf("%s\n", "]");
+}
+
+void dr_matrix_print_name_space(const dr_matrix matrix, const char* name,
+    const size_t space_open, const size_t space_data, const size_t space_close) {
+    dr_print_spaces(space_open);
+    printf("%s: ", name);
+    dr_matrix_print_space(matrix, 0, space_data, space_close);
+}
+
+void dr_matrix_print(const dr_matrix matrix) {
+    dr_matrix_print_space(matrix, 0, 0, 0);
 }
 
 void dr_matrix_print_name(const dr_matrix matrix, const char* name) {
