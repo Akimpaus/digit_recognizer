@@ -8,7 +8,7 @@ bool dr_neural_network_valid(const dr_neural_network neural_network) {
         neural_network.connections;
 }
 
-dr_neural_network dr_neural_network_create(const size_t layers_count, const size_t* layers_sizes) {
+dr_neural_network dr_neural_network_create(const size_t* layers_sizes, const size_t layers_count) {
     DR_ASSERT_MSG(layers_count >= 2, "neural network must contain 2 or more layers");
     DR_ASSERT_MSG(layers_sizes, "neural network layers sizes array cannot be NULL");
 
@@ -52,7 +52,7 @@ void dr_neural_network_free(dr_neural_network* neural_network) {
 void dr_neural_network_unchecked_randomize_weights(
     dr_neural_network neural_network, const DR_FLOAT_TYPE min, const DR_FLOAT_TYPE max) {
     for (size_t i = 0; i < neural_network.connections_count; ++i) {
-        dr_matrix_unchecked_fill_random(neural_network.connections + i, min, max);
+        dr_matrix_unchecked_fill_random(neural_network.connections[i], min, max);
     }
 }
 
@@ -62,6 +62,16 @@ void dr_neural_network_randomize_weights(
         "attempt to randomize weights for a not valid neural network");
     // the matrices are not checked when filling in
     dr_neural_network_unchecked_randomize_weights(neural_network, min, max);
+}
+
+void dr_neural_network_unchecked_set_input(dr_neural_network neural_network, const DR_FLOAT_TYPE* input) {
+    dr_matrix_unchecked_copy_array(neural_network.layers[0], input);
+}
+
+void dr_neural_network_set_input(dr_neural_network neural_network, const DR_FLOAT_TYPE* input) {
+    DR_ASSERT_MSG(input, "attempt to set a NULL input array for a neural network");
+    DR_ASSERT_MSG(dr_neural_network_valid(neural_network), "attempt to set input for a not valid neural network");
+    dr_neural_network_unchecked_set_input(neural_network, input);
 }
 
 void dr_neural_network_print(const dr_neural_network neural_network) {

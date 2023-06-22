@@ -40,30 +40,41 @@ void dr_matrix_free(dr_matrix* matrix) {
     dr_matrix_unchecked_free(matrix);
 }
 
-void dr_matrix_unchecked_fill(dr_matrix* matrix, const DR_FLOAT_TYPE value) {
-    const size_t matrix_size = dr_matrix_unchecked_size(*matrix);
+void dr_matrix_unchecked_fill(dr_matrix matrix, const DR_FLOAT_TYPE value) {
+    const size_t matrix_size = dr_matrix_unchecked_size(matrix);
     for (size_t i = 0; i < matrix_size; ++i) {
-        matrix->elements[i] = value;
+        matrix.elements[i] = value;
     }
 }
 
-void dr_matrix_fill(dr_matrix* matrix, const DR_FLOAT_TYPE value) {
-    DR_ASSERT_MSG(matrix, "attempt to fill null matrix ptr");
-    dr_matrix_assert_compat_elements_and_sizes(*matrix);
+void dr_matrix_fill(dr_matrix matrix, const DR_FLOAT_TYPE value) {
+    dr_matrix_assert_compat_elements_and_sizes(matrix);
     dr_matrix_unchecked_fill(matrix, value);
 }
 
-void dr_matrix_unchecked_fill_random(dr_matrix* matrix, const DR_FLOAT_TYPE min, const DR_FLOAT_TYPE max) {
-    const size_t matrix_size = dr_matrix_unchecked_size(*matrix);
+void dr_matrix_unchecked_fill_random(dr_matrix matrix, const DR_FLOAT_TYPE min, const DR_FLOAT_TYPE max) {
+    const size_t matrix_size = dr_matrix_unchecked_size(matrix);
     for (size_t i = 0; i < matrix_size; ++i) {
-        matrix->elements[i] = dr_random_float(min, max);
+        matrix.elements[i] = dr_random_float(min, max);
     }
 }
 
-void dr_matrix_fill_random(dr_matrix* matrix, const DR_FLOAT_TYPE min, const DR_FLOAT_TYPE max) {
-    DR_ASSERT_MSG(matrix, "attempt to fill random null matrix ptr");
-    dr_matrix_assert_compat_elements_and_sizes(*matrix);
+void dr_matrix_fill_random(dr_matrix matrix, const DR_FLOAT_TYPE min, const DR_FLOAT_TYPE max) {
+    dr_matrix_assert_compat_elements_and_sizes(matrix);
     dr_matrix_unchecked_fill_random(matrix, min, max);
+}
+
+void dr_matrix_unchecked_copy_array(dr_matrix matrix, const DR_FLOAT_TYPE* array) {
+    const size_t size = dr_matrix_unchecked_size(matrix);
+    for (size_t i = 0; i < size; ++i) {
+        matrix.elements[i] = array[i];
+    }
+}
+
+void dr_matrix_copy_array(dr_matrix matrix, const DR_FLOAT_TYPE* array) {
+    DR_ASSERT_MSG(array, "attempt to copy a NULL array to matrix");
+    dr_matrix_assert_compat_elements_and_sizes(matrix);
+    dr_matrix_unchecked_copy_array(matrix, array);
 }
 
 dr_matrix dr_matrix_create_empty() {
@@ -76,7 +87,7 @@ dr_matrix dr_matrix_create_empty() {
 
 dr_matrix dr_matrix_unchecked_create_filled(const size_t width, const size_t height, const DR_FLOAT_TYPE value) {
     dr_matrix matrix = dr_matrix_alloc(width, height);
-    dr_matrix_unchecked_fill(&matrix, value);
+    dr_matrix_unchecked_fill(matrix, value);
     return matrix;
 }
 
@@ -91,11 +102,9 @@ dr_matrix dr_matrix_create_from_array(const DR_FLOAT_TYPE* array, const size_t w
     if (width * height == 0) {
         return dr_matrix_create_empty();
     }
+    DR_ASSERT_MSG(array, "attempt to create a matrix from a NULL array with positive sizes");
     dr_matrix result  = dr_matrix_alloc(width, height);
-    const size_t size = width * height;
-    for (size_t i = 0; i < size; ++i) {
-        result.elements[i] = array[i];
-    }
+    dr_matrix_unchecked_copy_array(result, array);
     return result;
 }
 
@@ -109,13 +118,12 @@ DR_FLOAT_TYPE dr_matrix_get_element(const dr_matrix matrix, const size_t column,
 }
 
 void dr_matrix_unchecked_set_element(
-    dr_matrix* matrix, const size_t column, const size_t row, const DR_FLOAT_TYPE value) {
-    matrix->elements[row * matrix->width + column] = value;
+    dr_matrix matrix, const size_t column, const size_t row, const DR_FLOAT_TYPE value) {
+    matrix.elements[row * matrix.width + column] = value;
 }
 
-void dr_matrix_set_element(dr_matrix* matrix, const size_t column, const size_t row, const DR_FLOAT_TYPE value) {
-    DR_ASSERT_MSG(matrix, "attempt to set element to a null matrix ptr");
-    dr_matrix_assert_compat_elements_and_sizes(*matrix);
+void dr_matrix_set_element(dr_matrix matrix, const size_t column, const size_t row, const DR_FLOAT_TYPE value) {
+    dr_matrix_assert_compat_elements_and_sizes(matrix);
     dr_matrix_unchecked_set_element(matrix, column, row, value);
 }
 
@@ -138,7 +146,7 @@ void dr_matrix_unchecked_multiplication(const dr_matrix left, const dr_matrix ri
                 const DR_FLOAT_TYPE right_val = dr_matrix_unchecked_get_element(right, i, k);
                 sum += left_val * right_val;
             }
-            dr_matrix_unchecked_set_element(result, i, j, sum);
+            dr_matrix_unchecked_set_element(*result, i, j, sum);
         }
     }
 }
@@ -152,7 +160,7 @@ void dr_matrix_multiplication(const dr_matrix left, const dr_matrix right, dr_ma
 }
 
 bool dr_matrix_unchecked_equals_to_array(
-    const dr_matrix matrix, const size_t width, const size_t height, const DR_FLOAT_TYPE* array) {
+    const dr_matrix matrix, const DR_FLOAT_TYPE* array, const size_t width, const size_t height) {
     if (matrix.width != width || matrix.height != height) {
         return false;
     }
@@ -166,15 +174,15 @@ bool dr_matrix_unchecked_equals_to_array(
 }
 
 bool dr_matrix_equals_to_array(
-    const dr_matrix matrix, const size_t width, const size_t height, const DR_FLOAT_TYPE* array) {
+    const dr_matrix matrix, const DR_FLOAT_TYPE* array, const size_t width, const size_t height) {
     DR_ASSERT_MSG(array && width * height > 0, "comparison of a matrix with an array is possible only if "
         "the array is not NULL and its size is specified as positive.");
     dr_matrix_assert_compat_elements_and_sizes(matrix);
-    return dr_matrix_unchecked_equals_to_array(matrix, width, height, array);
+    return dr_matrix_unchecked_equals_to_array(matrix, array, width, height);
 }
 
 bool dr_matrix_unchecked_equals(const dr_matrix left, const dr_matrix right) {
-    return dr_matrix_unchecked_equals_to_array(left, right.width, right.height, right.elements);
+    return dr_matrix_unchecked_equals_to_array(left, right.elements, right.width, right.height);
 }
 
 bool dr_matrix_equals(const dr_matrix left, const dr_matrix right) {

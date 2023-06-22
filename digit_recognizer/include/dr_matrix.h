@@ -21,13 +21,17 @@ void dr_matrix_unchecked_free(dr_matrix* matrix);
 
 void dr_matrix_free(dr_matrix* matrix);
 
-void dr_matrix_unchecked_fill(dr_matrix* matrix, const DR_FLOAT_TYPE value);
+void dr_matrix_unchecked_fill(dr_matrix matrix, const DR_FLOAT_TYPE value);
 
-void dr_matrix_fill(dr_matrix* matrix, const DR_FLOAT_TYPE value);
+void dr_matrix_fill(dr_matrix matrix, const DR_FLOAT_TYPE value);
 
-void dr_matrix_unchecked_fill_random(dr_matrix* matrix, const DR_FLOAT_TYPE min, const DR_FLOAT_TYPE max);
+void dr_matrix_unchecked_fill_random(dr_matrix matrix, const DR_FLOAT_TYPE min, const DR_FLOAT_TYPE max);
 
-void dr_matrix_fill_random(dr_matrix* matrix, const DR_FLOAT_TYPE min, const DR_FLOAT_TYPE max);
+void dr_matrix_fill_random(dr_matrix matrix, const DR_FLOAT_TYPE min, const DR_FLOAT_TYPE max);
+
+void dr_matrix_unchecked_copy_array(dr_matrix matrix, const DR_FLOAT_TYPE* array);
+
+void dr_matrix_copy_array(dr_matrix matrix, const DR_FLOAT_TYPE* array);
 
 dr_matrix dr_matrix_unchecked_create_filled(const size_t width, const size_t height, const DR_FLOAT_TYPE value);
 
@@ -42,9 +46,9 @@ DR_FLOAT_TYPE dr_matrix_unchecked_get_element(const dr_matrix matrix, const size
 DR_FLOAT_TYPE dr_matrix_get_element(const dr_matrix matrix, const size_t column, const size_t row);
 
 void dr_matrix_unchecked_set_element(
-    dr_matrix* matrix, const size_t column, const size_t row, const DR_FLOAT_TYPE value);
+    dr_matrix matrix, const size_t column, const size_t row, const DR_FLOAT_TYPE value);
 
-void dr_matrix_set_element(dr_matrix* matrix, const size_t column, const size_t row, const DR_FLOAT_TYPE value); 
+void dr_matrix_set_element(dr_matrix matrix, const size_t column, const size_t row, const DR_FLOAT_TYPE value); 
 
 size_t dr_matrix_unchecked_size(const dr_matrix matrix);
 
@@ -57,10 +61,10 @@ void dr_matrix_multiplication(const dr_matrix left, const dr_matrix right, dr_ma
 bool dr_matrix_unchecked_equals(const dr_matrix left, const dr_matrix right);
 
 bool dr_matrix_unchecked_equals_to_array(
-    const dr_matrix matrix, const size_t width, const size_t height, const DR_FLOAT_TYPE* array);
+    const dr_matrix matrix, const DR_FLOAT_TYPE* array, const size_t width, const size_t height);
 
 bool dr_matrix_equals_to_array(
-    const dr_matrix matrix, const size_t width, const size_t height, const DR_FLOAT_TYPE* array);
+    const dr_matrix matrix, const DR_FLOAT_TYPE* array, const size_t width, const size_t height);
 
 bool dr_matrix_equals(const dr_matrix left, const dr_matrix right);
 
