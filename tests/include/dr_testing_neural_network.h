@@ -4,6 +4,13 @@
 #include "dr_testing_matrix.h"
 #include <dr_neural_network.h>
 
+static dr_activation_function dr_testing_neural_network_activation_functions_plug[] = {
+    &dr_sigmoid,
+    &dr_sigmoid,
+    &dr_sigmoid
+};
+#define DR_TESTING_NN_AF_PLUG dr_testing_neural_network_activation_functions_plug
+
 static bool dr_testing_neural_network_randomized_weights(
     const dr_neural_network neural_network, const DR_FLOAT_TYPE min, const DR_FLOAT_TYPE max) {
     for (size_t i = 0; i < neural_network.connections_count; ++i) {
@@ -12,6 +19,18 @@ static bool dr_testing_neural_network_randomized_weights(
         }
     }
     return true;
+}
+
+static DR_FLOAT_TYPE dr_testing_neural_network_func_nothing(const DR_FLOAT_TYPE val) {
+    return val;
+}
+
+static DR_FLOAT_TYPE dr_testing_neural_network_func_double(const DR_FLOAT_TYPE val) {
+    return val * 2;
+}
+
+static DR_FLOAT_TYPE dr_testing_neural_network_func_triple(const DR_FLOAT_TYPE val) {
+    return val * 3;
 }
 
 #endif // DR_TESTING_NEURAL_NETWORK_H

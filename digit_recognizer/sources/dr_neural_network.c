@@ -3,18 +3,21 @@
 
 bool dr_neural_network_valid(const dr_neural_network neural_network) {
     return (neural_network.layers_count >= 2) &&
-        (neural_network.connections_count == neural_network.layers_count - 1) &&
         neural_network.layers &&
+        (neural_network.connections_count == neural_network.layers_count - 1) &&
         neural_network.connections;
 }
 
-dr_neural_network dr_neural_network_create(const size_t* layers_sizes, const size_t layers_count) {
+dr_neural_network dr_neural_network_create(
+    const size_t* layers_sizes, const size_t layers_count, dr_activation_function* activation_functions) {
     DR_ASSERT_MSG(layers_count >= 2, "neural network must contain 2 or more layers");
     DR_ASSERT_MSG(layers_sizes, "neural network layers sizes array cannot be NULL");
+    DR_ASSERT_MSG(activation_functions, "neural network activation functions cannot be NULL");
 
     dr_neural_network nn;
-    nn.layers_count      = layers_count;
-    nn.connections_count = layers_count - 1; // <- number of connections less than count of layers by 1
+    nn.layers_count         = layers_count;
+    nn.connections_count    = layers_count - 1; // <- number of connections less than count of layers by 1
+    nn.activation_functions = activation_functions;
 
     nn.layers = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * nn.layers_count);
     DR_ASSERT_MSG(nn.layers, "alloc neural network layers error");
@@ -27,13 +30,14 @@ dr_neural_network dr_neural_network_create(const size_t* layers_sizes, const siz
     nn.connections = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * nn.connections_count);
     DR_ASSERT_MSG(nn.connections, "alloc neural network connections error");
     for (size_t i = 0; i < nn.connections_count; ++i) {
-        nn.connections[i] = dr_matrix_create_filled(layers_sizes[i + 1], layers_sizes[i], 0);
+        nn.connections[i] = dr_matrix_create_filled(layers_sizes[i], layers_sizes[i + 1], 0);
     }
 
     return nn;
 }
 
 void dr_neural_network_free(dr_neural_network* neural_network) {
+    neural_network->activation_functions = NULL;
     for (size_t i = 0; i < neural_network->layers_count; ++i) {
         dr_matrix_free(neural_network->layers + i);
     }
@@ -100,6 +104,28 @@ void dr_neural_network_get_output(const dr_neural_network neural_network, DR_FLO
     DR_ASSERT_MSG(output, "attempt to copy an output layer of a neural network to a NULL output array");
     DR_ASSERT_MSG(dr_neural_network_valid(neural_network), "attempt to get output for a not valid neural network");
     dr_neural_network_unchecked_get_output(neural_network, output);
+}
+
+void dr_neural_network_unchecked_forward_propagation(dr_neural_network neural_network) {
+    for (size_t i = 1; i < neural_network.layers_count; ++i) {
+        const size_t prev_index    = i - 1;
+        const dr_matrix connection = neural_network.connections[prev_index];
+        const dr_matrix layer      = neural_network.layers[prev_index];
+        dr_matrix* result_layer    = neural_network.layers + i;
+        dr_matrix_unchecked_multiplication(connection, layer, result_layer);
+        // activating
+        const size_t result_layer_size = dr_matrix_unchecked_size(*result_layer);
+        for (size_t j = 0; j < result_layer_size; ++j) {
+            DR_FLOAT_TYPE* element = result_layer->elements + j;
+            *element = neural_network.activation_functions[prev_index](*element);
+        }
+    }
+}
+
+void dr_neural_network_forward_propagation(dr_neural_network neural_network) {
+    DR_ASSERT_MSG(dr_neural_network_valid(neural_network),
+        "attempt to call a forward propagation on a not valid neural network");
+    dr_neural_network_unchecked_forward_propagation(neural_network);
 }
 
 void dr_neural_network_print(const dr_neural_network neural_network) {
