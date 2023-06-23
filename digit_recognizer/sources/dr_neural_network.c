@@ -64,6 +64,24 @@ void dr_neural_network_randomize_weights(
     dr_neural_network_unchecked_randomize_weights(neural_network, min, max);
 }
 
+size_t dr_neural_network_unchecked_input_size(const dr_neural_network neural_network) {
+    return neural_network.layers[0].height;
+}
+
+size_t dr_neural_network_input_size(const dr_neural_network neural_network) {
+    DR_ASSERT_MSG(dr_neural_network_valid(neural_network), "attempt to get input size of a not valid neural network");
+    return dr_neural_network_unchecked_input_size(neural_network);
+}
+
+size_t dr_neural_network_unchecked_output_size(const dr_neural_network neural_network) {
+    return neural_network.layers[neural_network.layers_count - 1].height;
+}
+
+size_t dr_neural_network_output_size(const dr_neural_network neural_network) {
+    DR_ASSERT_MSG(dr_neural_network_valid(neural_network), "attempt to get output size of a not valid neural network");
+    return dr_neural_network_unchecked_output_size(neural_network);
+}
+
 void dr_neural_network_unchecked_set_input(dr_neural_network neural_network, const DR_FLOAT_TYPE* input) {
     dr_matrix_unchecked_copy_array(neural_network.layers[0], input);
 }
@@ -72,6 +90,16 @@ void dr_neural_network_set_input(dr_neural_network neural_network, const DR_FLOA
     DR_ASSERT_MSG(input, "attempt to set a NULL input array for a neural network");
     DR_ASSERT_MSG(dr_neural_network_valid(neural_network), "attempt to set input for a not valid neural network");
     dr_neural_network_unchecked_set_input(neural_network, input);
+}
+
+void dr_neural_network_unchecked_get_output(const dr_neural_network neural_network, DR_FLOAT_TYPE* output) {
+    dr_matrix_copy_to_array(neural_network.layers[neural_network.layers_count - 1], output);
+}
+
+void dr_neural_network_get_output(const dr_neural_network neural_network, DR_FLOAT_TYPE* output) {
+    DR_ASSERT_MSG(output, "attempt to copy an output layer of a neural network to a NULL output array");
+    DR_ASSERT_MSG(dr_neural_network_valid(neural_network), "attempt to get output for a not valid neural network");
+    dr_neural_network_unchecked_get_output(neural_network, output);
 }
 
 void dr_neural_network_print(const dr_neural_network neural_network) {

@@ -16,6 +16,7 @@ UTEST(dr_utils, dr_random_float) {
         const DR_FLOAT_TYPE val = dr_random_float(min, max);
         EXPECT_TRUE(val >= min && val <= max);
     }
+
     {
         const DR_FLOAT_TYPE min = 1;
         const DR_FLOAT_TYPE max = 1;
@@ -29,6 +30,7 @@ UTEST(dr_utils, dr_random_float) {
         const DR_FLOAT_TYPE val = dr_random_float(min, max);
         EXPECT_TRUE(val >= min && val <= max);
     }
+
     {
         const DR_FLOAT_TYPE min = 0.2;
         const DR_FLOAT_TYPE max = 0.4;
@@ -42,6 +44,7 @@ UTEST(dr_utils, dr_random_float) {
         const DR_FLOAT_TYPE val = dr_random_float(min, max);
         EXPECT_TRUE(val >= min && val <= max);
     }
+
     {
         const DR_FLOAT_TYPE min = -10;
         const DR_FLOAT_TYPE max = -5;

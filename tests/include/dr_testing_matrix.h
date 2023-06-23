@@ -25,4 +25,19 @@ static bool dr_testing_matrix_filled_random(const dr_matrix matrix, const DR_FLO
     return true;
 }
 
+static bool dr_testing_matrix_array_equals(const size_t size, const DR_FLOAT_TYPE* left, const DR_FLOAT_TYPE* right) {
+    if (left == right) {
+        return true;
+    }
+    if ((left && !right) || (!left && right)) {
+        return false;
+    }
+    for (size_t i = 0; i < size; ++i) {
+        if (left[i] != right[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 #endif // DR_TESTING_H

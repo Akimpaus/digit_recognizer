@@ -22,9 +22,23 @@ void dr_neural_network_unchecked_randomize_weights(
 void dr_neural_network_randomize_weights(
     dr_neural_network neural_network, const DR_FLOAT_TYPE min, const DR_FLOAT_TYPE max);
 
+size_t dr_neural_network_unchecked_input_size(const dr_neural_network neural_network);
+
+size_t dr_neural_network_input_size(const dr_neural_network neural_network);
+
+size_t dr_neural_network_unchecked_output_size(const dr_neural_network neural_network);
+
+size_t dr_neural_network_output_size(const dr_neural_network neural_network);
+
 void dr_neural_network_unchecked_set_input(dr_neural_network neural_network, const DR_FLOAT_TYPE* input);
 
 void dr_neural_network_set_input(dr_neural_network neural_network, const DR_FLOAT_TYPE* input);
+
+void dr_neural_network_unchecked_get_output(const dr_neural_network neural_network, DR_FLOAT_TYPE* output);
+
+void dr_neural_network_get_output(const dr_neural_network neural_network, DR_FLOAT_TYPE* output);
+
+// void dr_neural_network_forward_propagation(dr_neural_network neural_network); // test
 
 void dr_neural_network_print(const dr_neural_network neural_network);
 

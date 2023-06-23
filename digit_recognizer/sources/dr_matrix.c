@@ -64,6 +64,19 @@ void dr_matrix_fill_random(dr_matrix matrix, const DR_FLOAT_TYPE min, const DR_F
     dr_matrix_unchecked_fill_random(matrix, min, max);
 }
 
+void dr_matrix_unchecked_copy_to_array(const dr_matrix matrix, DR_FLOAT_TYPE* array) {
+    const size_t size = dr_matrix_unchecked_size(matrix);
+    for (size_t i = 0; i < size; ++i) {
+        array[i] = matrix.elements[i];
+    }
+}
+
+void dr_matrix_copy_to_array(const dr_matrix matrix, DR_FLOAT_TYPE* array) {
+    DR_ASSERT_MSG(array, "attempt to copy a matrix to a NULL array");
+    dr_matrix_assert_compat_elements_and_sizes(matrix);
+    dr_matrix_unchecked_copy_to_array(matrix, array);
+}
+
 void dr_matrix_unchecked_copy_array(dr_matrix matrix, const DR_FLOAT_TYPE* array) {
     const size_t size = dr_matrix_unchecked_size(matrix);
     for (size_t i = 0; i < size; ++i) {

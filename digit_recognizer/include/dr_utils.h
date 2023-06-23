@@ -12,6 +12,8 @@
 # define DR_CLITERAL(type) (type)
 #endif
 
+// dr_malloc, wich checks that memory was allocated
+
 #ifndef DR_MALLOC
 # define DR_MALLOC(sz) malloc(sz)
 #endif

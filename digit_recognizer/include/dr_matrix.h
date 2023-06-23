@@ -29,6 +29,10 @@ void dr_matrix_unchecked_fill_random(dr_matrix matrix, const DR_FLOAT_TYPE min, 
 
 void dr_matrix_fill_random(dr_matrix matrix, const DR_FLOAT_TYPE min, const DR_FLOAT_TYPE max);
 
+void dr_matrix_unchecked_copy_to_array(const dr_matrix matrix, DR_FLOAT_TYPE* array);
+
+void dr_matrix_copy_to_array(const dr_matrix matrix, DR_FLOAT_TYPE* array);
+
 void dr_matrix_unchecked_copy_array(dr_matrix matrix, const DR_FLOAT_TYPE* array);
 
 void dr_matrix_copy_array(dr_matrix matrix, const DR_FLOAT_TYPE* array);
