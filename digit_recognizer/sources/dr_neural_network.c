@@ -112,7 +112,7 @@ void dr_neural_network_unchecked_forward_propagation(dr_neural_network neural_ne
         const dr_matrix connection = neural_network.connections[prev_index];
         const dr_matrix layer      = neural_network.layers[prev_index];
         dr_matrix* result_layer    = neural_network.layers + i;
-        dr_matrix_unchecked_multiplication(connection, layer, result_layer);
+        dr_matrix_unchecked_multiplication_write(connection, layer, result_layer);
         // activating
         const size_t result_layer_size = dr_matrix_unchecked_size(*result_layer);
         for (size_t j = 0; j < result_layer_size; ++j) {

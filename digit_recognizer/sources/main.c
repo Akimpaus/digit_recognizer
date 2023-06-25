@@ -9,7 +9,6 @@ int main() {
     dr_activation_function activation_functions[] = { &dr_sigmoid, &dr_sigmoid, &dr_sigmoid };
     dr_neural_network nn = dr_neural_network_create(layers, layers_count, activation_functions);
 
-
     dr_neural_network_randomize_weights(nn, 0, 1);
 
     DR_FLOAT_TYPE input[] = { 1, 0.5 };

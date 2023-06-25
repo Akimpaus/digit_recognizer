@@ -149,8 +149,7 @@ size_t dr_matrix_size(const dr_matrix matrix) {
     return dr_matrix_unchecked_size(matrix);
 }
 
-void dr_matrix_unchecked_multiplication(const dr_matrix left, const dr_matrix right, dr_matrix* result) {
-    *result = dr_matrix_alloc(right.width, left.height);
+void dr_matrix_unchecked_multiplication_write(const dr_matrix left, const dr_matrix right, dr_matrix* result) {
     for (size_t i = 0; i < result->width; ++i) {
         for (size_t j = 0; j < result->height; ++j) {
             DR_FLOAT_TYPE sum = 0;
@@ -164,12 +163,18 @@ void dr_matrix_unchecked_multiplication(const dr_matrix left, const dr_matrix ri
     }
 }
 
-void dr_matrix_multiplication(const dr_matrix left, const dr_matrix right, dr_matrix* result) {
+void dr_matrix_multiplication_write(const dr_matrix left, const dr_matrix right, dr_matrix* result) {
+    DR_ASSERT_MSG(result, "attempt to write matrix multiplication result to a NULL matrix");
+    DR_ASSERT_MSG(result->elements,
+        "attempt to write the result of matrix multiplication into a matrix with NULL elements");
+    DR_ASSERT_MSG(result->width == right.width && result->height == left.height,
+        "it is impossible to write the result of matrix multiplication: "
+        "the width of the resulting matrix should be as follows: width - right.width. height - left.height");
     DR_ASSERT_MSG(left.width == right.height, "when multiplying the matrix, the number of columns of the left matrix "
         "should be equal to the number of rows of the right matrix");
     dr_matrix_assert_compat_elements_and_sizes(left);
     dr_matrix_assert_compat_elements_and_sizes(right);
-    dr_matrix_unchecked_multiplication(left, right, result);
+    dr_matrix_unchecked_multiplication_write(left, right, result);
 }
 
 bool dr_matrix_unchecked_equals_to_array(

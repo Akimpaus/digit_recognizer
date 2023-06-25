@@ -449,7 +449,7 @@ UTEST(dr_matrix, size) {
     }
 }
 
-UTEST(dr_matrix, multiplication) {
+UTEST(dr_matrix, multiplication_write) {
     {
         const DR_FLOAT_TYPE left_arr[] = {
             0
@@ -466,9 +466,9 @@ UTEST(dr_matrix, multiplication) {
         dr_matrix left            = dr_matrix_create_from_array(left_arr, 1, 1);
         dr_matrix right           = dr_matrix_create_from_array(right_arr, 1, 1);
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 1);
-        dr_matrix result;
+        dr_matrix result          = dr_matrix_alloc(right.width, left.height);
 
-        dr_matrix_multiplication(left, right, &result);
+        dr_matrix_multiplication_write(left, right, &result);
         EXPECT_TRUE(dr_matrix_equals(result, expected_result));
 
         dr_matrix_free(&left);
@@ -496,9 +496,9 @@ UTEST(dr_matrix, multiplication) {
         dr_matrix left            = dr_matrix_create_from_array(left_arr, 2, 2);
         dr_matrix right           = dr_matrix_create_from_array(right_arr, 2, 2);
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 2);
-        dr_matrix result;
+        dr_matrix result          = dr_matrix_alloc(right.width, left.height);
 
-        dr_matrix_multiplication(left, right, &result);
+        dr_matrix_multiplication_write(left, right, &result);
         EXPECT_TRUE(dr_matrix_equals(result, expected_result));
 
         dr_matrix_free(&left);
@@ -526,9 +526,9 @@ UTEST(dr_matrix, multiplication) {
         dr_matrix left            = dr_matrix_create_from_array(left_arr, 2, 2);
         dr_matrix right           = dr_matrix_create_from_array(right_arr, 1, 2);
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 2);
-        dr_matrix result;
+        dr_matrix result          = dr_matrix_alloc(right.width, left.height);
 
-        dr_matrix_multiplication(left, right, &result);
+        dr_matrix_multiplication_write(left, right, &result);
         EXPECT_TRUE(dr_matrix_equals(result, expected_result));
 
         dr_matrix_free(&left);

@@ -58,9 +58,9 @@ size_t dr_matrix_unchecked_size(const dr_matrix matrix);
 
 size_t dr_matrix_size(const dr_matrix matrix);
 
-void dr_matrix_unchecked_multiplication(const dr_matrix left, const dr_matrix right, dr_matrix* result);
+void dr_matrix_unchecked_multiplication_write(const dr_matrix left, const dr_matrix right, dr_matrix* result);
 
-void dr_matrix_multiplication(const dr_matrix left, const dr_matrix right, dr_matrix* result);
+void dr_matrix_multiplication_write(const dr_matrix left, const dr_matrix right, dr_matrix* result);
 
 bool dr_matrix_unchecked_equals(const dr_matrix left, const dr_matrix right);
 
