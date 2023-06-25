@@ -15,16 +15,18 @@ dr_neural_network dr_neural_network_create(
     DR_ASSERT_MSG(activation_functions, "neural network activation functions cannot be NULL");
 
     dr_neural_network nn;
-    nn.layers_count         = layers_count;
-    nn.connections_count    = layers_count - 1; // <- number of connections less than count of layers by 1
-    nn.activation_functions = activation_functions;
+    nn.layers_count      = layers_count;
+    nn.connections_count = layers_count - 1; // <- number of connections less than count of layers by 1
 
+    nn.activation_functions = (dr_activation_function*)DR_MALLOC(sizeof(dr_activation_function) * nn.layers_count);
+    DR_ASSERT_MSG(nn.activation_functions, "alloc neural network activation functions error");
     nn.layers = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * nn.layers_count);
     DR_ASSERT_MSG(nn.layers, "alloc neural network layers error");
     for (size_t i = 0; i < nn.layers_count; ++i) {
         const size_t layer_size = layers_sizes[i];
         DR_ASSERT_MSG(layer_size > 0, "layer size of neural network must be more than zero");
-        nn.layers[i] = dr_matrix_create_filled(1, layer_size, 0);
+        nn.layers[i]               = dr_matrix_create_filled(1, layer_size, 0);
+        nn.activation_functions[i] = activation_functions[i];
     }
 
     nn.connections = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * nn.connections_count);
@@ -37,18 +39,19 @@ dr_neural_network dr_neural_network_create(
 }
 
 void dr_neural_network_free(dr_neural_network* neural_network) {
+    DR_FREE(neural_network->activation_functions);
     neural_network->activation_functions = NULL;
     for (size_t i = 0; i < neural_network->layers_count; ++i) {
         dr_matrix_free(neural_network->layers + i);
     }
-    free(neural_network->layers);
+    DR_FREE(neural_network->layers);
     neural_network->layers_count = 0;
     neural_network->layers       = NULL;
 
     for (size_t i = 0; i < neural_network->connections_count; ++i) {
         dr_matrix_free(neural_network->connections + i);
     }
-    free(neural_network->connections);
+    DR_FREE(neural_network->connections);
     neural_network->connections_count = 0;
     neural_network->connections       = NULL;
 }
