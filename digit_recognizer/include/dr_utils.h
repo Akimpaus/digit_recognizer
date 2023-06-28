@@ -12,10 +12,17 @@
 # define DR_CLITERAL(type) (type)
 #endif
 
-// add dr_malloc, wich checks that memory was allocated
+static void* dr_malloc(const size_t size) {
+    void* ptr = malloc(size);
+    if (!ptr) {
+        fprintf(stderr, "%s\n", "dr_malloc error");
+        exit(-1);
+    }
+    return ptr;
+}
 
 #ifndef DR_MALLOC
-# define DR_MALLOC(sz) malloc(sz)
+# define DR_MALLOC(size) dr_malloc(size)
 #endif
 
 #ifndef DR_FREE

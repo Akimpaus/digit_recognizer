@@ -1,6 +1,24 @@
 #include <utest.h>
 #include "dr_testing_neural_network.h"
 
+UTEST(dr_neural_network, dr_sigmoid) {
+    EXPECT_NEAR(dr_sigmoid(-10), 0.00004539786870227497, 0.0000001);
+    EXPECT_NEAR(dr_sigmoid(0), 0.5, 0.1);
+    EXPECT_NEAR(dr_sigmoid(10), 0.9999546021312978, 0.0000001);
+}
+
+UTEST(dr_neural_network, dr_relu) {
+    EXPECT_EQ(dr_relu(-10), 0);
+    EXPECT_EQ(dr_relu(0), 0);
+    EXPECT_EQ(dr_relu(10), 10);
+}
+
+UTEST(dr_neural_network, dr_tanh) {
+    EXPECT_EQ(dr_tanh(-10), -1);
+    EXPECT_EQ(dr_tanh(0), 0);
+    EXPECT_EQ(dr_tanh(10), 1);
+}
+
 UTEST(dr_neural_network, valid) {
     {
         dr_neural_network nn;
@@ -328,9 +346,14 @@ UTEST(dr_neural_network, forward_propagation) {
     {
         const size_t layers[]     = { 1, 1 };
         const size_t layers_count = DR_ARRAY_LENGTH(layers);
-        dr_neural_network nn      = dr_neural_network_create(layers, layers_count, DR_TESTING_NN_AF_PLUG);
+        dr_activation_function activation_functions[] = { &dr_sigmoid };
+        dr_neural_network nn = dr_neural_network_create(layers, layers_count, activation_functions);
 
-        // TODO
+        nn.layers[0].elements[0]      = 0;
+        nn.connections[0].elements[0] = 2;
+        dr_neural_network_forward_propagation(nn);
+
+        EXPECT_EQ(nn.layers[1].elements[0], 0.5);
 
         dr_neural_network_free(&nn);
     }
@@ -338,20 +361,57 @@ UTEST(dr_neural_network, forward_propagation) {
     {
         const size_t layers[]     = { 2, 2 };
         const size_t layers_count = DR_ARRAY_LENGTH(layers);
-        dr_neural_network nn      = dr_neural_network_create(layers, layers_count, DR_TESTING_NN_AF_PLUG);
+        dr_activation_function activation_functions[] = { &dr_sigmoid };
+        dr_neural_network nn = dr_neural_network_create(layers, layers_count, activation_functions);
 
-        // TODO
+        nn.layers[0].elements[0] = 1;
+        nn.layers[0].elements[1] = 0.5;
+
+        nn.connections[0].elements[0] = 0.9;
+        nn.connections[0].elements[1] = 0.3;
+        nn.connections[0].elements[2] = 0.2;
+        nn.connections[0].elements[3] = 0.8;
+
+        dr_neural_network_forward_propagation(nn);
+
+        EXPECT_NEAR(nn.layers[1].elements[0], 0.740775, 0.00001);
+        EXPECT_NEAR(nn.layers[1].elements[1], 0.645656, 0.00001);
 
         dr_neural_network_free(&nn);
     }
 
     {
-        const size_t layers[]     = { 4, 2, 3 };
+        const size_t layers[]     = { 2, 2, 3, 1 };
         const size_t layers_count = DR_ARRAY_LENGTH(layers);
-        dr_neural_network nn      = dr_neural_network_create(layers, layers_count, DR_TESTING_NN_AF_PLUG);
-        dr_matrix output_layer    = nn.layers[nn.layers_count - 1];
+        dr_activation_function activation_functions[] = { &dr_sigmoid, &dr_tanh, &dr_sigmoid };
+        dr_neural_network nn = dr_neural_network_create(layers, layers_count, activation_functions);
 
-        // TODO
+        nn.layers[0].elements[0] = 1;
+        nn.layers[0].elements[1] = 0.5;
+
+        nn.connections[0].elements[0] = 0.9;
+        nn.connections[0].elements[1] = 0.3;
+        nn.connections[0].elements[2] = 0.2;
+        nn.connections[0].elements[3] = 0.8;
+
+        nn.connections[1].elements[0] = 0.5;
+        nn.connections[1].elements[1] = 0.2;
+        nn.connections[1].elements[2] = 1;
+        nn.connections[1].elements[3] = 1;
+        nn.connections[1].elements[4] = 0.4;
+        nn.connections[1].elements[5] = 0.6;
+
+        nn.connections[2].elements[0] = 1;
+        nn.connections[2].elements[1] = 3;
+        nn.connections[2].elements[2] = 0;
+
+        dr_neural_network_forward_propagation(nn);
+
+        EXPECT_NEAR(nn.layers[2].elements[0], 0.4617386, 0.00001);
+        EXPECT_NEAR(nn.layers[2].elements[1], 0.8823832, 0.00001);
+        EXPECT_NEAR(nn.layers[2].elements[2], 0.5939218, 0.00001);
+
+        EXPECT_NEAR(nn.layers[3].elements[0], 0.957257, 0.0001);
 
         dr_neural_network_free(&nn);
     }

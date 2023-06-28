@@ -14,15 +14,15 @@ typedef struct {
     dr_activation_function* activation_functions;
 } dr_neural_network;
 
-static DR_FLOAT_TYPE dr_sigmoid(const DR_FLOAT_TYPE value) { // test
+static DR_FLOAT_TYPE dr_sigmoid(const DR_FLOAT_TYPE value) {
     return 1.0 / (1.0 + exp(-value));
 }
 
-static DR_FLOAT_TYPE dr_relu(const DR_FLOAT_TYPE value) { // test
+static DR_FLOAT_TYPE dr_relu(const DR_FLOAT_TYPE value) {
     return value < 0.0 ? 0 : value;
 }
 
-static DR_FLOAT_TYPE dr_tanh(const DR_FLOAT_TYPE value) { // test
+static DR_FLOAT_TYPE dr_tanh(const DR_FLOAT_TYPE value) {
     return tanh(value);
 }
 
@@ -57,7 +57,7 @@ void dr_neural_network_get_output(const dr_neural_network neural_network, DR_FLO
 
 void dr_neural_network_unchecked_forward_propagation(dr_neural_network neural_network);
 
-void dr_neural_network_forward_propagation(dr_neural_network neural_network); // test
+void dr_neural_network_forward_propagation(dr_neural_network neural_network);
 
 void dr_neural_network_print(const dr_neural_network neural_network);
 
