@@ -18,6 +18,14 @@ static DR_FLOAT_TYPE dr_sigmoid(const DR_FLOAT_TYPE value) { // test
     return 1.0 / (1.0 + exp(-value));
 }
 
+static DR_FLOAT_TYPE dr_relu(const DR_FLOAT_TYPE value) { // test
+    return value < 0.0 ? 0 : value;
+}
+
+static DR_FLOAT_TYPE dr_tanh(const DR_FLOAT_TYPE value) { // test
+    return tanh(value);
+}
+
 bool dr_neural_network_valid(const dr_neural_network neural_network);
 
 dr_neural_network dr_neural_network_create(

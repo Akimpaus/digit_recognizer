@@ -6,7 +6,7 @@ int main() {
 
     const size_t layers[]     = { 2, 2, 2, 10 };
     const size_t layers_count = DR_ARRAY_LENGTH(layers);
-    dr_activation_function activation_functions[] = { &dr_sigmoid, &dr_sigmoid, &dr_sigmoid };
+    dr_activation_function activation_functions[] = { &dr_relu, &dr_relu, &dr_sigmoid };
     dr_neural_network nn = dr_neural_network_create(layers, layers_count, activation_functions);
 
     dr_neural_network_randomize_weights(nn, 0, 1);

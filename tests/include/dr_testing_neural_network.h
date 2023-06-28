@@ -5,8 +5,8 @@
 #include <dr_neural_network.h>
 
 static dr_activation_function dr_testing_neural_network_activation_functions_plug[] = {
-    &dr_sigmoid,
-    &dr_sigmoid,
+    &dr_tanh,
+    &dr_relu,
     &dr_sigmoid
 };
 #define DR_TESTING_NN_AF_PLUG dr_testing_neural_network_activation_functions_plug

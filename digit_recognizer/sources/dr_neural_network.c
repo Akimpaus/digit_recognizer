@@ -18,21 +18,21 @@ dr_neural_network dr_neural_network_create(
     nn.layers_count      = layers_count;
     nn.connections_count = layers_count - 1; // <- number of connections less than count of layers by 1
 
-    nn.activation_functions = (dr_activation_function*)DR_MALLOC(sizeof(dr_activation_function) * nn.layers_count);
-    DR_ASSERT_MSG(nn.activation_functions, "alloc neural network activation functions error");
     nn.layers = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * nn.layers_count);
     DR_ASSERT_MSG(nn.layers, "alloc neural network layers error");
     for (size_t i = 0; i < nn.layers_count; ++i) {
         const size_t layer_size = layers_sizes[i];
         DR_ASSERT_MSG(layer_size > 0, "layer size of neural network must be more than zero");
-        nn.layers[i]               = dr_matrix_create_filled(1, layer_size, 0);
-        nn.activation_functions[i] = activation_functions[i];
+        nn.layers[i] = dr_matrix_create_filled(1, layer_size, 0);
     }
 
+    nn.activation_functions = (dr_activation_function*)DR_MALLOC(sizeof(dr_activation_function) * nn.connections_count);
+    DR_ASSERT_MSG(nn.activation_functions, "alloc neural network activation functions error");
     nn.connections = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * nn.connections_count);
     DR_ASSERT_MSG(nn.connections, "alloc neural network connections error");
     for (size_t i = 0; i < nn.connections_count; ++i) {
-        nn.connections[i] = dr_matrix_create_filled(layers_sizes[i], layers_sizes[i + 1], 0);
+        nn.activation_functions[i] = activation_functions[i];
+        nn.connections[i]          = dr_matrix_create_filled(layers_sizes[i], layers_sizes[i + 1], 0);
     }
 
     return nn;
@@ -41,6 +41,7 @@ dr_neural_network dr_neural_network_create(
 void dr_neural_network_free(dr_neural_network* neural_network) {
     DR_FREE(neural_network->activation_functions);
     neural_network->activation_functions = NULL;
+
     for (size_t i = 0; i < neural_network->layers_count; ++i) {
         dr_matrix_free(neural_network->layers + i);
     }
