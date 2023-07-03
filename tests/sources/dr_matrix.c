@@ -468,7 +468,7 @@ UTEST(dr_matrix, multiplication_write) {
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 1);
         dr_matrix result          = dr_matrix_alloc(right.width, left.height);
 
-        dr_matrix_multiplication_write(left, right, &result);
+        dr_matrix_multiplication_write(left, right, result);
         EXPECT_TRUE(dr_matrix_equals(result, expected_result));
 
         dr_matrix_free(&left);
@@ -498,7 +498,7 @@ UTEST(dr_matrix, multiplication_write) {
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 2);
         dr_matrix result          = dr_matrix_alloc(right.width, left.height);
 
-        dr_matrix_multiplication_write(left, right, &result);
+        dr_matrix_multiplication_write(left, right, result);
         EXPECT_TRUE(dr_matrix_equals(result, expected_result));
 
         dr_matrix_free(&left);
@@ -528,11 +528,231 @@ UTEST(dr_matrix, multiplication_write) {
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 2);
         dr_matrix result          = dr_matrix_alloc(right.width, left.height);
 
-        dr_matrix_multiplication_write(left, right, &result);
+        dr_matrix_multiplication_write(left, right, result);
         EXPECT_TRUE(dr_matrix_equals(result, expected_result));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+}
+
+UTEST(dr_matrix, multiplication_create) {
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            0
+        };
+
+        const DR_FLOAT_TYPE right_arr[] = {
+            1
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            0
+        };
+
+        dr_matrix left            = dr_matrix_create_from_array(left_arr, 1, 1);
+        dr_matrix right           = dr_matrix_create_from_array(right_arr, 1, 1);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 1);
+        dr_matrix result          = dr_matrix_multiplication_create(left, right);
+
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&left);
+        dr_matrix_free(&right);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            1, 2,
+            3, 4
+        };
+
+        const DR_FLOAT_TYPE right_arr[] = {
+            5, 6,
+            7, 8
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            19, 22,
+            43, 50
+        };
+
+        dr_matrix left            = dr_matrix_create_from_array(left_arr, 2, 2);
+        dr_matrix right           = dr_matrix_create_from_array(right_arr, 2, 2);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 2);
+        dr_matrix result          = dr_matrix_multiplication_create(left, right);
+
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&left);
+        dr_matrix_free(&right);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            1, 2,
+            3, 4
+        };
+
+        const DR_FLOAT_TYPE right_arr[] = {
+            5,
+            6
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            17,
+            39
+        };
+
+        dr_matrix left            = dr_matrix_create_from_array(left_arr, 2, 2);
+        dr_matrix right           = dr_matrix_create_from_array(right_arr, 1, 2);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 2);
+        dr_matrix result          = dr_matrix_multiplication_create(left, right);
+
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&left);
+        dr_matrix_free(&right);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+}
+
+UTEST(dr_matrix, transpose_write) {
+    {
+        const DR_FLOAT_TYPE matrix_arr[] = {
+            0
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            0
+        };
+
+        dr_matrix matrix          = dr_matrix_create_from_array(matrix_arr, 1, 1);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 1);
+        dr_matrix result          = dr_matrix_alloc(matrix.height, matrix.width);
+
+        dr_matrix_transpose_write(matrix, result);
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&matrix);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE matrix_arr[] = {
+            1, 2,
+            3, 4
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            1, 3,
+            2, 4
+        };
+
+        dr_matrix matrix          = dr_matrix_create_from_array(matrix_arr, 2, 2);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 2);
+        dr_matrix result          = dr_matrix_alloc(matrix.height, matrix.width);
+
+        dr_matrix_transpose_write(matrix, result);
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&matrix);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE matrix_arr[] = {
+            1, 2, -3,
+            0, 1, -5
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            1, 0,
+            2, 1,
+            -3, -5
+        };
+
+        dr_matrix matrix          = dr_matrix_create_from_array(matrix_arr, 3, 2);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 3);
+        dr_matrix result          = dr_matrix_alloc(matrix.height, matrix.width);
+
+        dr_matrix_transpose_write(matrix, result);
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&matrix);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+}
+
+UTEST(dr_matrix, transpose_create) {
+    {
+        const DR_FLOAT_TYPE matrix_arr[] = {
+            0
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            0
+        };
+
+        dr_matrix matrix          = dr_matrix_create_from_array(matrix_arr, 1, 1);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 1);
+        dr_matrix result          = dr_matrix_transpose_create(matrix);
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&matrix);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE matrix_arr[] = {
+            1, 2,
+            3, 4
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            1, 3,
+            2, 4
+        };
+
+        dr_matrix matrix          = dr_matrix_create_from_array(matrix_arr, 2, 2);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 2);
+        dr_matrix result          = dr_matrix_transpose_create(matrix);
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&matrix);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE matrix_arr[] = {
+            1, 2, -3,
+            0, 1, -5
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            1, 0,
+            2, 1,
+            -3, -5
+        };
+
+        dr_matrix matrix          = dr_matrix_create_from_array(matrix_arr, 3, 2);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 3);
+        dr_matrix result          = dr_matrix_transpose_create(matrix);
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&matrix);
         dr_matrix_free(&expected_result);
         dr_matrix_free(&result);
     }

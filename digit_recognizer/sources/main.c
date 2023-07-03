@@ -6,8 +6,9 @@ int main() {
 
     const size_t layers[]     = { 2, 2, 3 };
     const size_t layers_count = DR_ARRAY_LENGTH(layers);
-    dr_activation_function activation_functions[] = { &dr_sigmoid, &dr_tanh };
-    dr_neural_network nn = dr_neural_network_create(layers, layers_count, activation_functions);
+    dr_activation_function activation_functions[]   = { &dr_sigmoid, &dr_tanh };
+    dr_activation_function activation_functions_d[] = { &dr_sigmoid_derivative, &dr_tanh_derivative };
+    dr_neural_network nn = dr_neural_network_create(layers, layers_count, activation_functions, activation_functions_d);
 
     dr_neural_network_randomize_weights(nn, 0, 1);
 

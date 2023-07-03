@@ -11,6 +11,13 @@ static dr_activation_function dr_testing_neural_network_activation_functions_plu
 };
 #define DR_TESTING_NN_AF_PLUG dr_testing_neural_network_activation_functions_plug
 
+static dr_activation_function dr_testing_neural_network_activation_functions_derivatives_plug[] = {
+    &dr_tanh_derivative,
+    &dr_relu_derivative,
+    &dr_sigmoid_derivative
+};
+#define DR_TESTING_NN_AFD_PLUG dr_testing_neural_network_activation_functions_derivatives_plug
+
 static bool dr_testing_neural_network_randomized_weights(
     const dr_neural_network neural_network, const DR_FLOAT_TYPE min, const DR_FLOAT_TYPE max) {
     for (size_t i = 0; i < neural_network.connections_count; ++i) {

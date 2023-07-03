@@ -149,32 +149,75 @@ size_t dr_matrix_size(const dr_matrix matrix) {
     return dr_matrix_unchecked_size(matrix);
 }
 
-void dr_matrix_unchecked_multiplication_write(const dr_matrix left, const dr_matrix right, dr_matrix* result) {
-    for (size_t i = 0; i < result->width; ++i) {
-        for (size_t j = 0; j < result->height; ++j) {
+void dr_matrix_unchecked_multiplication_write(const dr_matrix left, const dr_matrix right, dr_matrix result) {
+    for (size_t i = 0; i < result.width; ++i) {
+        for (size_t j = 0; j < result.height; ++j) {
             DR_FLOAT_TYPE sum = 0;
             for (size_t k = 0; k < left.width; ++k) {
                 const DR_FLOAT_TYPE left_val  = dr_matrix_unchecked_get_element(left, k, j);
                 const DR_FLOAT_TYPE right_val = dr_matrix_unchecked_get_element(right, i, k);
                 sum += left_val * right_val;
             }
-            dr_matrix_unchecked_set_element(*result, i, j, sum);
+            dr_matrix_unchecked_set_element(result, i, j, sum);
         }
     }
 }
 
-void dr_matrix_multiplication_write(const dr_matrix left, const dr_matrix right, dr_matrix* result) {
-    DR_ASSERT_MSG(result, "attempt to write matrix multiplication result to a NULL matrix");
-    DR_ASSERT_MSG(result->elements,
+void dr_matrix_multiplication_write(const dr_matrix left, const dr_matrix right, dr_matrix result) {
+    DR_ASSERT_MSG(result.elements,
         "attempt to write the result of matrix multiplication into a matrix with NULL elements");
-    DR_ASSERT_MSG(result->width == right.width && result->height == left.height,
+    DR_ASSERT_MSG(result.width == right.width && result.height == left.height,
         "it is impossible to write the result of matrix multiplication: "
-        "the width of the resulting matrix should be as follows: width - right.width. height - left.height");
+        "the width of the resulting matrix should be as follows: width - right.width, height - left.height");
     DR_ASSERT_MSG(left.width == right.height, "when multiplying the matrix, the number of columns of the left matrix "
         "should be equal to the number of rows of the right matrix");
     dr_matrix_assert_compat_elements_and_sizes(left);
     dr_matrix_assert_compat_elements_and_sizes(right);
     dr_matrix_unchecked_multiplication_write(left, right, result);
+}
+
+dr_matrix dr_matrix_unchecked_multiplication_create(const dr_matrix left, const dr_matrix right) {
+    dr_matrix result = dr_matrix_alloc(right.width, left.height);
+    dr_matrix_unchecked_multiplication_write(left, right, result);
+    return result;
+}
+
+dr_matrix dr_matrix_multiplication_create(const dr_matrix left, const dr_matrix right) {
+    DR_ASSERT_MSG(left.width == right.height, "when multiplying the matrix, the number of columns of the left matrix "
+        "should be equal to the number of rows of the right matrix");
+    dr_matrix_assert_compat_elements_and_sizes(left);
+    dr_matrix_assert_compat_elements_and_sizes(right);
+    return dr_matrix_unchecked_multiplication_create(left, right);
+}
+
+void dr_matrix_unchecked_transpose_write(const dr_matrix matrix, dr_matrix result) {
+    for (size_t row = 0; row < matrix.height; ++row) {
+        for (size_t column = 0; column < matrix.width; ++column) {
+            const DR_FLOAT_TYPE value = dr_matrix_unchecked_get_element(matrix, column, row);
+            dr_matrix_unchecked_set_element(result, row, column, value);
+        }
+    }
+}
+
+void dr_matrix_transpose_write(const dr_matrix matrix, dr_matrix result) {
+    DR_ASSERT_MSG(result.elements,
+        "attempt to write the result of matrix transpose into a matrix with NULL elements");
+    DR_ASSERT_MSG(result.width == matrix.height && result.height == matrix.width,
+        "it is impossible to write the result of matrix transpose: "
+        "the width of the resulting matrix should be as follows: width - matrix.height, height - matrix.width");
+    dr_matrix_assert_compat_elements_and_sizes(matrix);
+    dr_matrix_unchecked_transpose_write(matrix, result);
+}
+
+dr_matrix dr_matrix_unchecked_transpose_create(const dr_matrix matrix) {
+    dr_matrix result = dr_matrix_alloc(matrix.height, matrix.width);
+    dr_matrix_unchecked_transpose_write(matrix, result);
+    return result;
+}
+
+dr_matrix dr_matrix_transpose_create(const dr_matrix matrix) {
+    dr_matrix_assert_compat_elements_and_sizes(matrix);
+    return dr_matrix_unchecked_transpose_create(matrix);
 }
 
 bool dr_matrix_unchecked_equals_to_array(

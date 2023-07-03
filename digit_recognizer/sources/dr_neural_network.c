@@ -5,14 +5,19 @@ bool dr_neural_network_valid(const dr_neural_network neural_network) {
     return (neural_network.layers_count >= 2) &&
         neural_network.layers &&
         (neural_network.connections_count == neural_network.layers_count - 1) &&
-        neural_network.connections;
+        neural_network.connections &&
+        neural_network.activation_functions &&
+        neural_network.activation_functions_derivatives;
 }
 
 dr_neural_network dr_neural_network_create(
-    const size_t* layers_sizes, const size_t layers_count, dr_activation_function* activation_functions) {
+    const size_t* layers_sizes, const size_t layers_count,
+    const dr_activation_function* activation_functions,
+    const dr_activation_function* activation_functions_derivatives) {
     DR_ASSERT_MSG(layers_count >= 2, "neural network must contain 2 or more layers");
     DR_ASSERT_MSG(layers_sizes, "neural network layers sizes array cannot be NULL");
     DR_ASSERT_MSG(activation_functions, "neural network activation functions cannot be NULL");
+    DR_ASSERT_MSG(activation_functions_derivatives, "neural network activation functions derivatives cannot be NULL");
 
     dr_neural_network nn;
     nn.layers_count      = layers_count;
@@ -28,11 +33,15 @@ dr_neural_network dr_neural_network_create(
 
     nn.activation_functions = (dr_activation_function*)DR_MALLOC(sizeof(dr_activation_function) * nn.connections_count);
     DR_ASSERT_MSG(nn.activation_functions, "alloc neural network activation functions error");
+    nn.activation_functions_derivatives =
+        (dr_activation_function*)DR_MALLOC(sizeof(dr_activation_function) * nn.connections_count);
+    DR_ASSERT_MSG(nn.activation_functions_derivatives, "alloc neural network activation functions derivatives error");
     nn.connections = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * nn.connections_count);
     DR_ASSERT_MSG(nn.connections, "alloc neural network connections error");
     for (size_t i = 0; i < nn.connections_count; ++i) {
         nn.activation_functions[i] = activation_functions[i];
-        nn.connections[i]          = dr_matrix_create_filled(layers_sizes[i], layers_sizes[i + 1], 0);
+        nn.activation_functions_derivatives[i] = activation_functions_derivatives[i];
+        nn.connections[i] = dr_matrix_create_filled(layers_sizes[i], layers_sizes[i + 1], 0);
     }
 
     return nn;
@@ -41,6 +50,8 @@ dr_neural_network dr_neural_network_create(
 void dr_neural_network_free(dr_neural_network* neural_network) {
     DR_FREE(neural_network->activation_functions);
     neural_network->activation_functions = NULL;
+    DR_FREE(neural_network->activation_functions_derivatives);
+    neural_network->activation_functions_derivatives = NULL;
 
     for (size_t i = 0; i < neural_network->layers_count; ++i) {
         dr_matrix_free(neural_network->layers + i);
@@ -115,12 +126,12 @@ void dr_neural_network_unchecked_forward_propagation(dr_neural_network neural_ne
         const size_t prev_index    = i - 1;
         const dr_matrix connection = neural_network.connections[prev_index];
         const dr_matrix layer      = neural_network.layers[prev_index];
-        dr_matrix* result_layer    = neural_network.layers + i;
+        dr_matrix result_layer     = *(neural_network.layers + i);
         dr_matrix_unchecked_multiplication_write(connection, layer, result_layer);
         // activating
-        const size_t result_layer_size = dr_matrix_unchecked_size(*result_layer);
+        const size_t result_layer_size = dr_matrix_unchecked_size(result_layer);
         for (size_t j = 0; j < result_layer_size; ++j) {
-            DR_FLOAT_TYPE* element = result_layer->elements + j;
+            DR_FLOAT_TYPE* element = result_layer.elements + j;
             *element = neural_network.activation_functions[prev_index](*element);
         }
     }
@@ -132,11 +143,30 @@ void dr_neural_network_forward_propagation(dr_neural_network neural_network) {
     dr_neural_network_unchecked_forward_propagation(neural_network);
 }
 
+dr_matrix dr_neural_network_unchecked_hidden_layer_error_matrix(
+    const dr_neural_network neural_network, const size_t layer_index, const dr_matrix output_error_matrix) {
+    // TODO
+}
+
+void dr_neural_network_unchecked_back_propagation(
+    dr_neural_network neural_network, const dr_matrix output_error_matrix) {
+    // TODO
+    // error_matrix = error_matrix_out
+    // size_t i = neural_network.layers_count - 1;
+    //while (i > 0) {
+    // af_derivative_matrix = dr_neural_network_derivative_matrix(neural_network, i);
+    // out_matrix           = dr_matrix_transpose(neural_network.layers[i]);
+    // delta_matrix = error_matrix * af_derivative_matrix * out_matrix * learning_rate;
+    // error_matrx  = dr_neural_network_error_matrix(i - 1);
+    // --i;
+    //}
+}
+
 void dr_neural_network_print(const dr_neural_network neural_network) {
     const char layer_str[]          = "layer";
     const char connection_str[]     = "connection";
-    const size_t layer_str_len      = strlen(layer_str);
-    const size_t connection_str_len = strlen(connection_str);
+    const size_t layer_str_len      = DR_ARRAY_LENGTH(layer_str);
+    const size_t connection_str_len = DR_ARRAY_LENGTH(connection_str);
     const size_t max_str_len        = layer_str_len > connection_str_len ? layer_str_len : connection_str_len;
     const size_t layer_count_len    = dr_size_t_len(neural_network.layers_count);
     // 1 is length of symbol '='
