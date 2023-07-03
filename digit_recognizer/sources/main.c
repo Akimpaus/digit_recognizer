@@ -1,6 +1,5 @@
 #include "dr_neural_network.h"
 
-
 int main() {
     srand(time(NULL));
 

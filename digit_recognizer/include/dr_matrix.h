@@ -37,6 +37,14 @@ void dr_matrix_unchecked_copy_array(dr_matrix matrix, const DR_FLOAT_TYPE* array
 
 void dr_matrix_copy_array(dr_matrix matrix, const DR_FLOAT_TYPE* array);
 
+void dr_matrix_unchecked_copy_write(const dr_matrix src_matrix, dr_matrix dst_matrix);
+
+void dr_matrix_copy_write(const dr_matrix src_matrix, dr_matrix dst_matrix);
+
+dr_matrix dr_matrix_unchecked_copy_create(const dr_matrix matrix);
+
+dr_matrix dr_matrix_copy_create(const dr_matrix matrix);
+
 dr_matrix dr_matrix_unchecked_create_filled(const size_t width, const size_t height, const DR_FLOAT_TYPE value);
 
 dr_matrix dr_matrix_create_empty();
@@ -65,6 +73,22 @@ void dr_matrix_multiplication_write(const dr_matrix left, const dr_matrix right,
 dr_matrix dr_matrix_unchecked_multiplication_create(const dr_matrix left, const dr_matrix right);
 
 dr_matrix dr_matrix_multiplication_create(const dr_matrix left, const dr_matrix right);
+
+void dr_matrix_unchecked_scale_write(const dr_matrix matrix, const DR_FLOAT_TYPE value, dr_matrix result);
+
+void dr_matrix_scale_write(const dr_matrix matrix, const DR_FLOAT_TYPE value, dr_matrix result);
+
+dr_matrix dr_matrix_unchecked_scale_create(const dr_matrix matrix, const DR_FLOAT_TYPE value);
+
+dr_matrix dr_matrix_scale_create(const dr_matrix matrix, const DR_FLOAT_TYPE value);
+
+void dr_matrix_unchecked_subtraction_write(const dr_matrix left, const dr_matrix right, dr_matrix result);
+
+void dr_matrix_subtraction_write(const dr_matrix left, const dr_matrix right, dr_matrix result);
+
+dr_matrix dr_matrix_unchecked_subtraction_create(const dr_matrix left, const dr_matrix right);
+
+dr_matrix dr_matrix_subtraction_create(const dr_matrix left, const dr_matrix right);
 
 void dr_matrix_unchecked_transpose_write(const dr_matrix matrix, dr_matrix result);
 

@@ -624,6 +624,326 @@ UTEST(dr_matrix, multiplication_create) {
     }
 }
 
+UTEST(dr_matrix, scale_write) {
+    {
+        const DR_FLOAT_TYPE matrix_arr[] = {
+            1
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            2
+        };
+
+        dr_matrix matrix          = dr_matrix_create_from_array(matrix_arr, 1, 1);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 1);
+        dr_matrix result          = dr_matrix_alloc(matrix.width, matrix.height);
+
+        dr_matrix_scale_write(matrix, 2, result);
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&matrix);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE matrix_arr[] = {
+            1, 2,
+            3, 4
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            3, 6,
+            9, 12
+        };
+
+        dr_matrix matrix          = dr_matrix_create_from_array(matrix_arr, 2, 2);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 2);
+        dr_matrix result          = dr_matrix_alloc(matrix.width, matrix.height);
+
+        dr_matrix_scale_write(matrix, 3, result);
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&matrix);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE matrix_arr[] = {
+            1, 2,
+            3, 4,
+            5, 6
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            4, 8,
+            12, 16,
+            20, 24
+        };
+
+        dr_matrix matrix          = dr_matrix_create_from_array(matrix_arr, 2, 3);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 3);
+        dr_matrix result          = dr_matrix_alloc(matrix.width, matrix.height);
+
+        dr_matrix_scale_write(matrix, 4, result);
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&matrix);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+}
+
+UTEST(dr_matrix, scale_create) {
+    {
+        const DR_FLOAT_TYPE matrix_arr[] = {
+            1
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            2
+        };
+
+        dr_matrix matrix          = dr_matrix_create_from_array(matrix_arr, 1, 1);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 1);
+        dr_matrix result          = dr_matrix_scale_create(matrix, 2);
+
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&matrix);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE matrix_arr[] = {
+            1, 2,
+            3, 4
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            3, 6,
+            9, 12
+        };
+
+        dr_matrix matrix          = dr_matrix_create_from_array(matrix_arr, 2, 2);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 2);
+        dr_matrix result          = dr_matrix_scale_create(matrix, 3);
+
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&matrix);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE matrix_arr[] = {
+            1, 2,
+            3, 4,
+            5, 6
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            4, 8,
+            12, 16,
+            20, 24
+        };
+
+        dr_matrix matrix          = dr_matrix_create_from_array(matrix_arr, 2, 3);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 3);
+        dr_matrix result          = dr_matrix_scale_create(matrix, 4);
+
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&matrix);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+}
+
+UTEST(dr_matrix, subtraction_write) {
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            1
+        };
+
+        const DR_FLOAT_TYPE right_arr[] = {
+            1
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            0
+        };
+
+        dr_matrix left            = dr_matrix_create_from_array(left_arr, 1, 1);
+        dr_matrix right           = dr_matrix_create_from_array(right_arr, 1, 1);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 1);
+        dr_matrix result          = dr_matrix_alloc(right.width, left.height);
+
+        dr_matrix_subtraction_write(left, right, result);
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&left);
+        dr_matrix_free(&right);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            1, 4,
+            33, 4
+        };
+
+        const DR_FLOAT_TYPE right_arr[] = {
+            2, 6,
+            7, 8
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            -1, -2,
+            26, -4
+        };
+
+        dr_matrix left            = dr_matrix_create_from_array(left_arr, 2, 2);
+        dr_matrix right           = dr_matrix_create_from_array(right_arr, 2, 2);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 2);
+        dr_matrix result          = dr_matrix_alloc(right.width, left.height);
+
+        dr_matrix_subtraction_write(left, right, result);
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&left);
+        dr_matrix_free(&right);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            6, 11,
+            -2, 0,
+            4, 4
+        };
+
+        const DR_FLOAT_TYPE right_arr[] = {
+            -4, -12,
+            7, 10,
+            14, -20
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            10, 23,
+            -9, -10,
+            -10, 24
+        };
+
+        dr_matrix left            = dr_matrix_create_from_array(left_arr, 2, 3);
+        dr_matrix right           = dr_matrix_create_from_array(right_arr, 2, 3);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 3);
+        dr_matrix result          = dr_matrix_alloc(right.width, left.height);
+
+        dr_matrix_subtraction_write(left, right, result);
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&left);
+        dr_matrix_free(&right);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+}
+
+UTEST(dr_matrix, subtraction_create) {
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            1
+        };
+
+        const DR_FLOAT_TYPE right_arr[] = {
+            1
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            0
+        };
+
+        dr_matrix left            = dr_matrix_create_from_array(left_arr, 1, 1);
+        dr_matrix right           = dr_matrix_create_from_array(right_arr, 1, 1);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 1);
+        dr_matrix result          = dr_matrix_subtraction_create(left, right);
+
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&left);
+        dr_matrix_free(&right);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            1, 4,
+            33, 4
+        };
+
+        const DR_FLOAT_TYPE right_arr[] = {
+            2, 6,
+            7, 8
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            -1, -2,
+            26, -4
+        };
+
+        dr_matrix left            = dr_matrix_create_from_array(left_arr, 2, 2);
+        dr_matrix right           = dr_matrix_create_from_array(right_arr, 2, 2);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 2);
+        dr_matrix result          = dr_matrix_subtraction_create(left, right);
+
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&left);
+        dr_matrix_free(&right);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            6, 11,
+            -2, 0,
+            4, 4
+        };
+
+        const DR_FLOAT_TYPE right_arr[] = {
+            -4, -12,
+            7, 10,
+            14, -20
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            10, 23,
+            -9, -10,
+            -10, 24
+        };
+
+        dr_matrix left            = dr_matrix_create_from_array(left_arr, 2, 3);
+        dr_matrix right           = dr_matrix_create_from_array(right_arr, 2, 3);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 3);
+        dr_matrix result          = dr_matrix_subtraction_create(left, right);
+
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&left);
+        dr_matrix_free(&right);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+}
+
 UTEST(dr_matrix, transpose_write) {
     {
         const DR_FLOAT_TYPE matrix_arr[] = {
@@ -754,6 +1074,103 @@ UTEST(dr_matrix, transpose_create) {
 
         dr_matrix_free(&matrix);
         dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+}
+
+UTEST(dr_matrix, copy_write) {
+    {
+        const DR_FLOAT_TYPE src_arr[] = {
+            1
+        };
+
+        dr_matrix src    = dr_matrix_create_from_array(src_arr, 1, 1);
+        dr_matrix result = dr_matrix_create_filled(1, 1, 0);
+        dr_matrix_copy_write(src, result);
+
+        EXPECT_TRUE(dr_matrix_equals(result, src));
+
+        dr_matrix_free(&src);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE src_arr[] = {
+            1, 2,
+            3, 4
+        };
+
+        dr_matrix src    = dr_matrix_create_from_array(src_arr, 2, 2);
+        dr_matrix result = dr_matrix_create_filled(2, 2, 0);
+        dr_matrix_copy_write(src, result);
+
+        EXPECT_TRUE(dr_matrix_equals(result, src));
+
+        dr_matrix_free(&src);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE src_arr[] = {
+            1, 2,
+            3, 4,
+            5, 6
+        };
+
+        dr_matrix src    = dr_matrix_create_from_array(src_arr, 2, 3);
+        dr_matrix result = dr_matrix_create_filled(2, 3, 0);
+        dr_matrix_copy_write(src, result);
+
+        EXPECT_TRUE(dr_matrix_equals(result, src));
+
+        dr_matrix_free(&src);
+        dr_matrix_free(&result);
+    }
+}
+
+UTEST(dr_matrix, copy_create) {
+    {
+        const DR_FLOAT_TYPE src_arr[] = {
+            1
+        };
+
+        dr_matrix src    = dr_matrix_create_from_array(src_arr, 1, 1);
+        dr_matrix result = dr_matrix_copy_create(src);
+
+        EXPECT_TRUE(dr_matrix_equals(result, src));
+
+        dr_matrix_free(&src);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE src_arr[] = {
+            1, 2,
+            3, 4
+        };
+
+        dr_matrix src    = dr_matrix_create_from_array(src_arr, 2, 2);
+        dr_matrix result = dr_matrix_copy_create(src);
+
+        EXPECT_TRUE(dr_matrix_equals(result, src));
+
+        dr_matrix_free(&src);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE src_arr[] = {
+            1, 2,
+            3, 4,
+            5, 6
+        };
+
+        dr_matrix src    = dr_matrix_create_from_array(src_arr, 2, 3);
+        dr_matrix result = dr_matrix_copy_create(src);
+
+        EXPECT_TRUE(dr_matrix_equals(result, src));
+
+        dr_matrix_free(&src);
         dr_matrix_free(&result);
     }
 }

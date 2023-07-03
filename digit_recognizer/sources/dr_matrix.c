@@ -90,6 +90,29 @@ void dr_matrix_copy_array(dr_matrix matrix, const DR_FLOAT_TYPE* array) {
     dr_matrix_unchecked_copy_array(matrix, array);
 }
 
+void dr_matrix_unchecked_copy_write(const dr_matrix src_matrix, dr_matrix dst_matrix) {
+    dr_matrix_unchecked_copy_array(dst_matrix, src_matrix.elements);
+}
+
+void dr_matrix_copy_write(const dr_matrix src_matrix, dr_matrix dst_matrix) {
+    DR_ASSERT_MSG(src_matrix.width == dst_matrix.width && src_matrix.height == dst_matrix.height,
+        "attempt to copy a matrix into a matrix of a different size");
+    dr_matrix_assert_compat_elements_and_sizes(src_matrix);
+    dr_matrix_assert_compat_elements_and_sizes(dst_matrix);
+    dr_matrix_unchecked_copy_write(src_matrix, dst_matrix);
+}
+
+dr_matrix dr_matrix_unchecked_copy_create(const dr_matrix matrix) {
+    dr_matrix result = dr_matrix_alloc(matrix.width, matrix.height);
+    dr_matrix_unchecked_copy_write(matrix, result);
+    return result;
+}
+
+dr_matrix dr_matrix_copy_create(const dr_matrix matrix) {
+    dr_matrix_assert_compat_elements_and_sizes(matrix);
+    return dr_matrix_unchecked_copy_create(matrix);
+}
+
 dr_matrix dr_matrix_create_empty() {
     dr_matrix matrix;
     matrix.elements = NULL;
@@ -188,6 +211,64 @@ dr_matrix dr_matrix_multiplication_create(const dr_matrix left, const dr_matrix 
     dr_matrix_assert_compat_elements_and_sizes(left);
     dr_matrix_assert_compat_elements_and_sizes(right);
     return dr_matrix_unchecked_multiplication_create(left, right);
+}
+
+void dr_matrix_unchecked_scale_write(const dr_matrix matrix, const DR_FLOAT_TYPE value, dr_matrix result) {
+    const size_t size = dr_matrix_unchecked_size(matrix);
+    for (size_t i = 0; i < size; ++i) {
+        result.elements[i] = matrix.elements[i] * value;
+    }
+}
+
+void dr_matrix_scale_write(const dr_matrix matrix, const DR_FLOAT_TYPE value, dr_matrix result) {
+    DR_ASSERT_MSG(result.width == matrix.width && result.height == matrix.height,
+        "an attempt to write the result of matrix scale to a matrix with a different size");
+    DR_ASSERT_MSG(matrix.elements && result.elements, "attempt to scale an invalid matrices");
+    dr_matrix_unchecked_scale_write(matrix, value, result);
+}
+
+dr_matrix dr_matrix_unchecked_scale_create(const dr_matrix matrix, const DR_FLOAT_TYPE value) {
+    dr_matrix result = dr_matrix_alloc(matrix.width, matrix.height);
+    dr_matrix_unchecked_scale_write(matrix, value, result);
+    return result;
+}
+
+dr_matrix dr_matrix_scale_create(const dr_matrix matrix, const DR_FLOAT_TYPE value) {
+    dr_matrix_assert_compat_elements_and_sizes(matrix);
+    return dr_matrix_unchecked_scale_create(matrix, value);
+}
+
+void dr_matrix_unchecked_subtraction_write(const dr_matrix left, const dr_matrix right, dr_matrix result) {
+    const size_t size = dr_matrix_unchecked_size(result);
+    for (size_t i = 0; i < size; ++i) {
+        result.elements[i] = left.elements[i] - right.elements[i];
+    }
+}
+
+void dr_matrix_subtraction_write(const dr_matrix left, const dr_matrix right, dr_matrix result) {
+    DR_ASSERT_MSG(left.width == right.width && left.height == right.height,
+        "attempt to subtract matrices of different sizes");
+    DR_ASSERT_MSG(result.width == left.width && result.height == left.height,
+        "attempt to write the result of matrices to a matrix with a different sizes");
+    if (dr_matrix_size(result) == 0) {
+        return;
+    }
+    DR_ASSERT_MSG(left.elements && right.elements && result.elements,
+        "attempt at subtraction with invalid matrices");
+    dr_matrix_unchecked_subtraction_write(left, right, result);
+}
+
+dr_matrix dr_matrix_unchecked_subtraction_create(const dr_matrix left, const dr_matrix right) {
+    dr_matrix result = dr_matrix_alloc(left.width, left.height);
+    dr_matrix_unchecked_subtraction_write(left, right, result);
+    return result;
+}
+
+dr_matrix dr_matrix_subtraction_create(const dr_matrix left, const dr_matrix right) {
+    DR_ASSERT_MSG(left.width == right.width && left.height == right.height,
+        "attempt to subtract matrices of different sizes");
+    DR_ASSERT_MSG(left.elements && right.elements, "attempt at subtraction with invalid matrices");
+    return dr_matrix_unchecked_subtraction_create(left, right);
 }
 
 void dr_matrix_unchecked_transpose_write(const dr_matrix matrix, dr_matrix result) {
