@@ -213,6 +213,44 @@ dr_matrix dr_matrix_multiplication_create(const dr_matrix left, const dr_matrix 
     return dr_matrix_unchecked_multiplication_create(left, right);
 }
 
+void dr_matrix_unchecked_rows_multiplication_write(const dr_matrix left, const dr_matrix right, dr_matrix result) {
+    for (size_t row = 0; row < result.height; ++row) {
+        DR_FLOAT_TYPE left_val = 1;
+        for (size_t column = 0; column < left.width; ++column) {
+            left_val *= dr_matrix_unchecked_get_element(left, column, row);
+        }
+        DR_FLOAT_TYPE right_val = 1;
+        for (size_t column = 0; column < right.width; ++column) {
+            right_val *= dr_matrix_unchecked_get_element(right, column, row);
+        }
+        result.elements[row] = left_val * right_val;
+    }
+}
+
+void dr_matrix_rows_multiplication_write(const dr_matrix left, const dr_matrix right, dr_matrix result) {
+    DR_ASSERT_MSG(left.height == right.height && right.height == result.height,
+        "attempt to matrix rows multiplication with different number of rows");
+    DR_ASSERT_MSG(result.width == 1,
+        "when performing matrix rows multiplication, the width of the resulting matrix must be one.");
+    dr_matrix_assert_compat_elements_and_sizes(left);
+    dr_matrix_assert_compat_elements_and_sizes(right);
+    dr_matrix_assert_compat_elements_and_sizes(result);
+    dr_matrix_unchecked_rows_multiplication_write(left, right, result);
+}
+
+dr_matrix dr_matrix_unchecked_rows_multiplication_create(const dr_matrix left, const dr_matrix right) {
+    dr_matrix result = dr_matrix_alloc(1, left.height);
+    dr_matrix_unchecked_rows_multiplication_write(left, right, result);
+    return result;
+}
+
+dr_matrix dr_matrix_rows_multiplication_create(const dr_matrix left, const dr_matrix right) {
+    DR_ASSERT_MSG(left.height == right.height, "attempt to matrix rows multiplication with different number of rows");
+    dr_matrix_assert_compat_elements_and_sizes(left);
+    dr_matrix_assert_compat_elements_and_sizes(right);
+    return dr_matrix_unchecked_rows_multiplication_create(left, right);
+}
+
 void dr_matrix_unchecked_scale_write(const dr_matrix matrix, const DR_FLOAT_TYPE value, dr_matrix result) {
     const size_t size = dr_matrix_unchecked_size(matrix);
     for (size_t i = 0; i < size; ++i) {

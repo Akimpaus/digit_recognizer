@@ -74,6 +74,14 @@ dr_matrix dr_matrix_unchecked_multiplication_create(const dr_matrix left, const 
 
 dr_matrix dr_matrix_multiplication_create(const dr_matrix left, const dr_matrix right);
 
+void dr_matrix_unchecked_rows_multiplication_write(const dr_matrix left, const dr_matrix right, dr_matrix result);
+
+void dr_matrix_rows_multiplication_write(const dr_matrix left, const dr_matrix right, dr_matrix result); 
+
+dr_matrix dr_matrix_unchecked_rows_multiplication_create(const dr_matrix left, const dr_matrix right);
+
+dr_matrix dr_matrix_rows_multiplication_create(const dr_matrix left, const dr_matrix right);
+
 void dr_matrix_unchecked_scale_write(const dr_matrix matrix, const DR_FLOAT_TYPE value, dr_matrix result);
 
 void dr_matrix_scale_write(const dr_matrix matrix, const DR_FLOAT_TYPE value, dr_matrix result);
