@@ -20,8 +20,7 @@ static DR_FLOAT_TYPE dr_sigmoid(const DR_FLOAT_TYPE value) {
 }
 
 static DR_FLOAT_TYPE dr_sigmoid_derivative(const DR_FLOAT_TYPE value) {
-    const DR_FLOAT_TYPE sigmoid_value = dr_sigmoid(value);
-    return sigmoid_value * (1.0 - sigmoid_value);
+    return value * (1.0 - value);
 }
 
 static DR_FLOAT_TYPE dr_relu(const DR_FLOAT_TYPE value) {
@@ -37,7 +36,7 @@ static DR_FLOAT_TYPE dr_tanh(const DR_FLOAT_TYPE value) {
 }
 
 static DR_FLOAT_TYPE dr_tanh_derivative(const DR_FLOAT_TYPE value) {
-    return 1 - pow(dr_tanh(value), 2);
+    return 1 - pow(value, 2);
 }
 
 bool dr_neural_network_valid(const dr_neural_network neural_network);

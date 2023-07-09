@@ -168,7 +168,42 @@ dr_matrix dr_neural_network_activation_functions_derivatives_for_layer_matrix_cr
 
 void dr_neural_network_unchecked_back_propagation( // TODO make all unchecked here
     dr_neural_network neural_network, const DR_FLOAT_TYPE learning_rate, const dr_matrix output_error_matrix) {
-    
+    dr_matrix E = dr_matrix_create_empty();
+    for (size_t layer_index = neural_network.layers_count - 1; layer_index > 0; --layer_index) {
+        const size_t connection_index = layer_index - 1;
+        dr_matrix W = neural_network.connections[connection_index];
+
+        if (connection_index == neural_network.connections_count - 1) {
+            E = dr_matrix_copy_create(output_error_matrix);
+        } else {
+            // тут веса должны быть старые. а получется так, что тут я применяю уже обновленные веса.
+            dr_matrix W_next      = neural_network.connections[connection_index + 1];
+            dr_matrix W_next_T    = dr_matrix_transpose_create(W_next);
+            const dr_matrix E_new = dr_matrix_dot_create(W_next_T, E);
+            dr_matrix_free(&E);
+            E = E_new;
+            dr_matrix_free(&W_next_T);
+        }
+
+        dr_matrix AFD = dr_neural_network_activation_functions_derivatives_for_layer_matrix_create(
+            neural_network, layer_index);
+
+        dr_matrix AFD_mult_E = dr_matrix_multiplication_create(AFD, E);
+        dr_matrix_free(&AFD);
+
+        dr_matrix O = neural_network.layers[layer_index - 1];
+        dr_matrix O_T = dr_matrix_transpose_create(O);
+
+        dr_matrix W_delta = dr_matrix_dot_create(AFD_mult_E, O_T);
+        dr_matrix_scale_write(W_delta, learning_rate, W_delta);
+        dr_matrix_free(&AFD_mult_E);
+        dr_matrix_free(&O_T);
+
+        dr_matrix_addition_write(W, W_delta, W);
+        dr_matrix_free(&W_delta);
+    }
+
+    dr_matrix_free(&E);
 }
 
 void dr_neural_network_print(const dr_neural_network neural_network) {

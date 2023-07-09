@@ -319,7 +319,7 @@ void dr_matrix_subtraction_write(const dr_matrix left, const dr_matrix right, dr
     DR_ASSERT_MSG(left.width == right.width && left.height == right.height,
         "attempt to subtract matrices of different sizes");
     DR_ASSERT_MSG(result.width == left.width && result.height == left.height,
-        "attempt to write the result of matrices to a matrix with a different sizes");
+        "attempt to write the result of matrices subtraction to a matrix with a different sizes");
     if (dr_matrix_size(result) == 0) {
         return;
     }
@@ -339,6 +339,39 @@ dr_matrix dr_matrix_subtraction_create(const dr_matrix left, const dr_matrix rig
         "attempt to subtract matrices of different sizes");
     DR_ASSERT_MSG(left.elements && right.elements, "attempt at subtraction with invalid matrices");
     return dr_matrix_unchecked_subtraction_create(left, right);
+}
+
+void dr_matrix_unchecked_addition_write(const dr_matrix left, const dr_matrix right, dr_matrix result) {
+    const size_t size = dr_matrix_unchecked_size(result);
+    for (size_t i = 0; i < size; ++i) {
+        result.elements[i] = left.elements[i] + right.elements[i];
+    }
+}
+
+void dr_matrix_addition_write(const dr_matrix left, const dr_matrix right, dr_matrix result) {
+    DR_ASSERT_MSG(left.width == right.width && left.height == right.height,
+        "attempt to add matrices of different sizes");
+    DR_ASSERT_MSG(result.width == left.width && result.height == left.height,
+        "attempt to write the result of matrices addition to a matrix with a different sizes");
+    if (dr_matrix_size(result) == 0) {
+        return;
+    }
+    DR_ASSERT_MSG(left.elements && right.elements && result.elements,
+        "attempt at addition with invalid matrices");
+    dr_matrix_unchecked_addition_write(left, right, result);
+}
+
+dr_matrix dr_matrix_unchecked_addition_create(const dr_matrix left, const dr_matrix right) {
+    dr_matrix result = dr_matrix_alloc(left.width, left.height);
+    dr_matrix_unchecked_addition_write(left, right, result);
+    return result;
+}
+
+dr_matrix dr_matrix_addition_create(const dr_matrix left, const dr_matrix right) {
+    DR_ASSERT_MSG(left.width == right.width && left.height == right.height,
+        "attempt to add matrices of different sizes");
+    DR_ASSERT_MSG(left.elements && right.elements, "attempt at addition with invalid matrices");
+    return dr_matrix_unchecked_addition_create(left, right);
 }
 
 void dr_matrix_unchecked_transpose_write(const dr_matrix matrix, dr_matrix result) {

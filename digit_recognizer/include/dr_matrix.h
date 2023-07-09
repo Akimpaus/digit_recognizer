@@ -106,6 +106,14 @@ dr_matrix dr_matrix_unchecked_subtraction_create(const dr_matrix left, const dr_
 
 dr_matrix dr_matrix_subtraction_create(const dr_matrix left, const dr_matrix right);
 
+void dr_matrix_unchecked_addition_write(const dr_matrix left, const dr_matrix right, dr_matrix result);
+
+void dr_matrix_addition_write(const dr_matrix left, const dr_matrix right, dr_matrix result);
+
+dr_matrix dr_matrix_unchecked_addition_create(const dr_matrix left, const dr_matrix right);
+
+dr_matrix dr_matrix_addition_create(const dr_matrix left, const dr_matrix right);
+
 void dr_matrix_unchecked_transpose_write(const dr_matrix matrix, dr_matrix result);
 
 void dr_matrix_transpose_write(const dr_matrix matrix, dr_matrix result);

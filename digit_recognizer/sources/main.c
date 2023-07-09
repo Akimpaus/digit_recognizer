@@ -17,13 +17,21 @@ int main() {
         { 0 }
     };
 
-    const size_t layers[]     = { 1, 2, 1 };
+    const size_t layers[]     = { 1, 10, 10, 1 };
     const size_t layers_count = DR_ARRAY_LENGTH(layers);
     dr_activation_function activation_functions[]   = { &dr_sigmoid, &dr_sigmoid, &dr_sigmoid };
     dr_activation_function activation_functions_d[] = { &dr_sigmoid_derivative, &dr_sigmoid_derivative, &dr_sigmoid_derivative };
     dr_neural_network nn = dr_neural_network_create(layers, layers_count, activation_functions, activation_functions_d);
 
     dr_neural_network_randomize_weights(nn, 0, 1);
+
+    // test
+    dr_neural_network_unchecked_forward_propagation(nn);
+    dr_matrix error           = dr_matrix_create_filled(1, layers[DR_ARRAY_LENGTH(layers) - 1], 1);
+    dr_neural_network_unchecked_back_propagation(nn, 0.01, error);
+    dr_neural_network_print_name(nn, "Neural network");
+    return 0;
+    //test 
 
 
     for (size_t i = 0; i < 100000; ++i) {

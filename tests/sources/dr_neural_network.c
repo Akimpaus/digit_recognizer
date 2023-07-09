@@ -8,9 +8,9 @@ UTEST(dr_neural_network, dr_sigmoid) {
 }
 
 UTEST(dr_neural_network, dr_sigmoid_derivative) {
-    EXPECT_NEAR(dr_sigmoid_derivative(-10), 0.00004539580773579226, 0.0000001);
-    EXPECT_NEAR(dr_sigmoid_derivative(0), 0.25, 0.001);
-    EXPECT_NEAR(dr_sigmoid_derivative(10), 0.00004539580773568563, 0.0000001);
+    EXPECT_EQ(dr_sigmoid_derivative(-10), -110);
+    EXPECT_EQ(dr_sigmoid_derivative(0), 0);
+    EXPECT_EQ(dr_sigmoid_derivative(10), -90);
 }
 
 UTEST(dr_neural_network, dr_relu) {
@@ -32,9 +32,9 @@ UTEST(dr_neural_network, dr_tanh) {
 }
 
 UTEST(dr_neural_network, dr_tanh_derivative) {
-    EXPECT_NEAR(dr_tanh_derivative(-1), 0.419974, 0.00001);
-    EXPECT_NEAR(dr_tanh_derivative(0), 1, 0.001);
-    EXPECT_NEAR(dr_tanh_derivative(1), 0.419974, 0.00001);
+    EXPECT_EQ(dr_tanh_derivative(-10), -99);
+    EXPECT_EQ(dr_tanh_derivative(0), 1);
+    EXPECT_EQ(dr_tanh_derivative(5), -24);
 }
 
 UTEST(dr_neural_network, valid) {

@@ -1306,6 +1306,187 @@ UTEST(dr_matrix, subtraction_create) {
     }
 }
 
+UTEST(dr_matrix, addition_write) {
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            1
+        };
+
+        const DR_FLOAT_TYPE right_arr[] = {
+            1
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            2
+        };
+
+        dr_matrix left            = dr_matrix_create_from_array(left_arr, 1, 1);
+        dr_matrix right           = dr_matrix_create_from_array(right_arr, 1, 1);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 1);
+        dr_matrix result          = dr_matrix_alloc(right.width, left.height);
+
+        dr_matrix_addition_write(left, right, result);
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&left);
+        dr_matrix_free(&right);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            1, 4,
+            33, 4
+        };
+
+        const DR_FLOAT_TYPE right_arr[] = {
+            2, 6,
+            7, 8
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            3, 10,
+            40, 12
+        };
+
+        dr_matrix left            = dr_matrix_create_from_array(left_arr, 2, 2);
+        dr_matrix right           = dr_matrix_create_from_array(right_arr, 2, 2);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 2);
+        dr_matrix result          = dr_matrix_alloc(right.width, left.height);
+
+        dr_matrix_addition_write(left, right, result);
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&left);
+        dr_matrix_free(&right);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            6, 11,
+            -2, 0,
+            4, 4
+        };
+
+        const DR_FLOAT_TYPE right_arr[] = {
+            -4, -12,
+            7, 10,
+            14, -20
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            2, -1,
+            5, 10,
+            18, -16
+        };
+
+        dr_matrix left            = dr_matrix_create_from_array(left_arr, 2, 3);
+        dr_matrix right           = dr_matrix_create_from_array(right_arr, 2, 3);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 3);
+        dr_matrix result          = dr_matrix_alloc(right.width, left.height);
+
+        dr_matrix_addition_write(left, right, result);
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&left);
+        dr_matrix_free(&right);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+}
+
+UTEST(dr_matrix, addition_create) {
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            1
+        };
+
+        const DR_FLOAT_TYPE right_arr[] = {
+            1
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            2
+        };
+
+        dr_matrix left            = dr_matrix_create_from_array(left_arr, 1, 1);
+        dr_matrix right           = dr_matrix_create_from_array(right_arr, 1, 1);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 1);
+        dr_matrix result          = dr_matrix_addition_create(left, right);
+
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&left);
+        dr_matrix_free(&right);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            1, 4,
+            33, 4
+        };
+
+        const DR_FLOAT_TYPE right_arr[] = {
+            2, 6,
+            7, 8
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            3, 10,
+            40, 12
+        };
+
+        dr_matrix left            = dr_matrix_create_from_array(left_arr, 2, 2);
+        dr_matrix right           = dr_matrix_create_from_array(right_arr, 2, 2);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 2);
+        dr_matrix result          = dr_matrix_addition_create(left, right);
+
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&left);
+        dr_matrix_free(&right);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+
+    {
+        const DR_FLOAT_TYPE left_arr[] = {
+            6, 11,
+            -2, 0,
+            4, 4
+        };
+
+        const DR_FLOAT_TYPE right_arr[] = {
+            -4, -12,
+            7, 10,
+            14, -20
+        };
+
+        const DR_FLOAT_TYPE expected_result_arr[] = {
+            2, -1,
+            5, 10,
+            18, -16
+        };
+
+        dr_matrix left            = dr_matrix_create_from_array(left_arr, 2, 3);
+        dr_matrix right           = dr_matrix_create_from_array(right_arr, 2, 3);
+        dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 3);
+        dr_matrix result          = dr_matrix_addition_create(left, right);
+
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+
+        dr_matrix_free(&left);
+        dr_matrix_free(&right);
+        dr_matrix_free(&expected_result);
+        dr_matrix_free(&result);
+    }
+}
+
 UTEST(dr_matrix, transpose_write) {
     {
         const DR_FLOAT_TYPE matrix_arr[] = {
