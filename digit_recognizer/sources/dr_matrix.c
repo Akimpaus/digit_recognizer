@@ -173,6 +173,38 @@ size_t dr_matrix_size(const dr_matrix matrix) {
 }
 
 void dr_matrix_unchecked_multiplication_write(const dr_matrix left, const dr_matrix right, dr_matrix result) {
+    const size_t size = dr_matrix_unchecked_size(result);
+    for (size_t i = 0; i < size; ++i) {
+        result.elements[i] = left.elements[i] * right.elements[i];
+    }
+}
+
+void dr_matrix_multiplication_write(const dr_matrix left, const dr_matrix right, dr_matrix result) {
+    DR_ASSERT_MSG(left.width == right.width && left.height == right.height,
+        "for element-wise matrix multiplication, the matrices must be of the same size");
+    DR_ASSERT_MSG(result.width == left.width && result.height == left.height,
+        "attempt to write the result of the element-wise multiplication of matrices into a matrix of a different size");
+    dr_matrix_assert_compat_elements_and_sizes(left);
+    dr_matrix_assert_compat_elements_and_sizes(right);
+    dr_matrix_assert_compat_elements_and_sizes(result);
+    dr_matrix_unchecked_multiplication_write(left, right, result);
+}
+
+dr_matrix dr_matrix_unchecked_multiplication_create(const dr_matrix left, const dr_matrix right) {
+    dr_matrix result = dr_matrix_alloc(left.width, left.height);
+    dr_matrix_unchecked_multiplication_write(left, right, result);
+    return result;
+}
+
+dr_matrix dr_matrix_multiplication_create(const dr_matrix left, const dr_matrix right) {
+    DR_ASSERT_MSG(left.width == right.width && left.height == right.height,
+        "for element-wise matrix multiplication, the matrices must be of the same size");
+    dr_matrix_assert_compat_elements_and_sizes(left);
+    dr_matrix_assert_compat_elements_and_sizes(right);
+    return dr_matrix_unchecked_multiplication_create(left, right);
+}
+
+void dr_matrix_unchecked_dot_write(const dr_matrix left, const dr_matrix right, dr_matrix result) {
     for (size_t i = 0; i < result.width; ++i) {
         for (size_t j = 0; j < result.height; ++j) {
             DR_FLOAT_TYPE sum = 0;
@@ -186,31 +218,31 @@ void dr_matrix_unchecked_multiplication_write(const dr_matrix left, const dr_mat
     }
 }
 
-void dr_matrix_multiplication_write(const dr_matrix left, const dr_matrix right, dr_matrix result) {
+void dr_matrix_dot_write(const dr_matrix left, const dr_matrix right, dr_matrix result) {
     DR_ASSERT_MSG(result.elements,
-        "attempt to write the result of matrix multiplication into a matrix with NULL elements");
+        "attempt to write the result of matrix dot into a matrix with NULL elements");
     DR_ASSERT_MSG(result.width == right.width && result.height == left.height,
-        "it is impossible to write the result of matrix multiplication: "
+        "it is impossible to write the result of matrix dot: "
         "the width of the resulting matrix should be as follows: width - right.width, height - left.height");
     DR_ASSERT_MSG(left.width == right.height, "when multiplying the matrix, the number of columns of the left matrix "
         "should be equal to the number of rows of the right matrix");
     dr_matrix_assert_compat_elements_and_sizes(left);
     dr_matrix_assert_compat_elements_and_sizes(right);
-    dr_matrix_unchecked_multiplication_write(left, right, result);
+    dr_matrix_unchecked_dot_write(left, right, result);
 }
 
-dr_matrix dr_matrix_unchecked_multiplication_create(const dr_matrix left, const dr_matrix right) {
+dr_matrix dr_matrix_unchecked_dot_create(const dr_matrix left, const dr_matrix right) {
     dr_matrix result = dr_matrix_alloc(right.width, left.height);
-    dr_matrix_unchecked_multiplication_write(left, right, result);
+    dr_matrix_unchecked_dot_write(left, right, result);
     return result;
 }
 
-dr_matrix dr_matrix_multiplication_create(const dr_matrix left, const dr_matrix right) {
-    DR_ASSERT_MSG(left.width == right.height, "when multiplying the matrix, the number of columns of the left matrix "
-        "should be equal to the number of rows of the right matrix");
+dr_matrix dr_matrix_dot_create(const dr_matrix left, const dr_matrix right) {
+    DR_ASSERT_MSG(left.width == right.height, "when dot the matrix, the number of columns of the left matrix "
+        "must be equal to the number of rows of the right matrix");
     dr_matrix_assert_compat_elements_and_sizes(left);
     dr_matrix_assert_compat_elements_and_sizes(right);
-    return dr_matrix_unchecked_multiplication_create(left, right);
+    return dr_matrix_unchecked_dot_create(left, right);
 }
 
 void dr_matrix_unchecked_rows_multiplication_write(const dr_matrix left, const dr_matrix right, dr_matrix result) {

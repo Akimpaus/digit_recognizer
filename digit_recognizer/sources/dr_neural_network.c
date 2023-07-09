@@ -127,7 +127,7 @@ void dr_neural_network_unchecked_forward_propagation(dr_neural_network neural_ne
         const dr_matrix connection = neural_network.connections[prev_index];
         const dr_matrix layer      = neural_network.layers[prev_index];
         dr_matrix result_layer     = *(neural_network.layers + i);
-        dr_matrix_unchecked_multiplication_write(connection, layer, result_layer);
+        dr_matrix_unchecked_dot_write(connection, layer, result_layer);
         // activating
         const size_t result_layer_size = dr_matrix_unchecked_size(result_layer);
         for (size_t j = 0; j < result_layer_size; ++j) {
@@ -168,33 +168,7 @@ dr_matrix dr_neural_network_activation_functions_derivatives_for_layer_matrix_cr
 
 void dr_neural_network_unchecked_back_propagation( // TODO make all unchecked here
     dr_neural_network neural_network, const DR_FLOAT_TYPE learning_rate, const dr_matrix output_error_matrix) {
-    dr_matrix E = dr_matrix_create_empty();
-    for (size_t i = neural_network.connections_count; i > 0; --i) {
-        const size_t connection_index = i - 1;
-        dr_matrix W = neural_network.connections[connection_index];
-        if (i == neural_network.connections_count) {
-            E = dr_matrix_copy_create(output_error_matrix);
-        } else {
-            dr_matrix W_T = dr_matrix_transpose_create(W);
-            const dr_matrix E_new = dr_matrix_multiplication_create(W_T, E);
-            dr_matrix_free(&E);
-            E = E_new;
-            dr_matrix_free(&W_T);
-        }
-
-        dr_matrix AFD =
-            dr_neural_network_activation_functions_derivatives_for_layer_matrix_create(neural_network, i);
-        dr_matrix E_AFD = dr_matrix_multiplication_create(E, AFD); // <- вот тут не обычное умножение матриц, а просто попарно умножены элементы должны быть.
-        dr_matrix_free(&E);
-        dr_matrix_free(&AFD);
-
-        dr_matrix O_T       = dr_matrix_transpose_create(neural_network.layers[i]);
-        dr_matrix E_AFD_O_T = dr_matrix_multiplication_create(E_AFD, O_T);
-        dr_matrix_free(&E_AFD);
-        dr_matrix_free(&O_T);
-        dr_matrix_scale_write(E_AFD_O_T, learning_rate, E_AFD_O_T); 
-        dr_matrix_subtraction_write(W, E_AFD_O_T, W);
-    }
+    
 }
 
 void dr_neural_network_print(const dr_neural_network neural_network) {
