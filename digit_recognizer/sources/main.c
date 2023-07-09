@@ -17,7 +17,7 @@ int main() {
         { 0 }
     };
 
-    const size_t layers[]     = { 1, 10, 10, 1 };
+    const size_t layers[]     = { 28 * 28, 10, 10 };
     const size_t layers_count = DR_ARRAY_LENGTH(layers);
     dr_activation_function activation_functions[]   = { &dr_sigmoid, &dr_sigmoid, &dr_sigmoid };
     dr_activation_function activation_functions_d[] = { &dr_sigmoid_derivative, &dr_sigmoid_derivative, &dr_sigmoid_derivative };
