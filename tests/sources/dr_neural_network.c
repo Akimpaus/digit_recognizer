@@ -468,3 +468,7 @@ UTEST(dr_neural_network, forward_propagation) {
         dr_neural_network_free(&nn);
     }
 }
+
+UTEST(dr_neural_network, back_propagation) {
+    
+}

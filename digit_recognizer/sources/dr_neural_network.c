@@ -143,7 +143,7 @@ void dr_neural_network_forward_propagation(dr_neural_network neural_network) {
     dr_neural_network_unchecked_forward_propagation(neural_network);
 }
 
-dr_matrix dr_neural_network_unchecked_activation_functions_derivatives_for_layer_matrix_create(
+static inline dr_matrix dr_neural_network_details_unchecked_activation_functions_derivatives_for_layer_matrix_create(
     const dr_neural_network neural_network, const size_t layer_index) {
     const dr_matrix layer       = neural_network.layers[layer_index];
     dr_matrix result            = dr_matrix_alloc(layer.width, layer.height);
@@ -155,15 +155,57 @@ dr_matrix dr_neural_network_unchecked_activation_functions_derivatives_for_layer
     return result;
 }
 
-dr_matrix dr_neural_network_activation_functions_derivatives_for_layer_matrix_create(
-    const dr_neural_network neural_network, const size_t layer_index) {
-    dr_neural_network_valid(neural_network);
-    DR_ASSERT_MSG(layer_index > 0 && layer_index < neural_network.layers_count,
-        "invalid index is specified when trying to call "
-        "dr_neural_network_activation_functions_derivatives_for_layer_matrix_create, "
-        "it must be more zero and less than layers_count");
-    return dr_neural_network_unchecked_activation_functions_derivatives_for_layer_matrix_create(
+static inline void dr_neural_network_details_update_E_W_next_output_layer(
+    const dr_matrix output_error_matrix, const dr_matrix W, dr_matrix* E, dr_matrix* W_next) {
+    *E      = dr_matrix_copy_create(output_error_matrix);
+    *W_next = dr_matrix_copy_create(W);
+}
+
+static inline void dr_neural_network_details_update_E_W_next_hidden_layer(
+    const dr_matrix W, dr_matrix* E, dr_matrix* W_next) {
+    dr_matrix W_next_T = dr_matrix_transpose_create(*W_next);
+    dr_matrix_free(W_next);
+    const dr_matrix E_new = dr_matrix_dot_create(W_next_T, *E);
+    dr_matrix_free(E);
+    *E = E_new;
+    dr_matrix_free(&W_next_T);
+    *W_next = dr_matrix_copy_create(W);
+}
+
+static inline void dr_neural_network_details_update_E_W_next(const dr_neural_network neural_network,
+    const dr_matrix output_error_matrix, const dr_matrix W, dr_matrix* E, dr_matrix* W_next, const size_t layer_index) {
+    if (layer_index - 1 == neural_network.connections_count - 1) {
+        dr_neural_network_details_update_E_W_next_output_layer(output_error_matrix, W, E, W_next);
+    } else {
+        dr_neural_network_details_update_E_W_next_hidden_layer(W, E, W_next);
+    }
+}
+
+static inline dr_matrix dr_neural_network_details_W_delta_create(
+    const dr_neural_network neural_network, const dr_matrix E,
+    const DR_FLOAT_TYPE learning_rate, const size_t layer_index) {
+    dr_matrix AFD = dr_neural_network_details_unchecked_activation_functions_derivatives_for_layer_matrix_create(
         neural_network, layer_index);
+
+    dr_matrix AFD_mult_E = dr_matrix_multiplication_create(AFD, E);
+    dr_matrix_free(&AFD);
+
+    const dr_matrix O = neural_network.layers[layer_index - 1];
+    dr_matrix O_T     = dr_matrix_transpose_create(O);
+
+    dr_matrix W_delta = dr_matrix_dot_create(AFD_mult_E, O_T);
+    dr_matrix_scale_write(W_delta, learning_rate, W_delta);
+    dr_matrix_free(&AFD_mult_E);
+    dr_matrix_free(&O_T);
+
+    return W_delta;
+}
+
+static inline void dr_neural_network_details_apply_W_delta(const dr_neural_network neural_network, const dr_matrix E,
+    dr_matrix W, const DR_FLOAT_TYPE learning_rate, const size_t layer_index) {
+    dr_matrix W_delta = dr_neural_network_details_W_delta_create(neural_network, E, learning_rate, layer_index);
+    dr_matrix_addition_write(W, W_delta, W);
+    dr_matrix_free(&W_delta);
 }
 
 void dr_neural_network_unchecked_back_propagation( // TODO make all unchecked here
@@ -172,38 +214,9 @@ void dr_neural_network_unchecked_back_propagation( // TODO make all unchecked he
     dr_matrix W_next = dr_matrix_create_empty();
 
     for (size_t layer_index = neural_network.layers_count - 1; layer_index > 0; --layer_index) {
-        const size_t connection_index = layer_index - 1;
-        const dr_matrix W             = neural_network.connections[connection_index];
-
-        if (connection_index == neural_network.connections_count - 1) {
-            E      = dr_matrix_copy_create(output_error_matrix);
-            W_next = dr_matrix_copy_create(W);
-        } else {
-            dr_matrix W_next_T = dr_matrix_transpose_create(W_next);
-            dr_matrix_free(&W_next);
-            const dr_matrix E_new = dr_matrix_dot_create(W_next_T, E);
-            dr_matrix_free(&E);
-            E = E_new;
-            dr_matrix_free(&W_next_T);
-            W_next = dr_matrix_copy_create(W);
-        }
-
-        dr_matrix AFD = dr_neural_network_activation_functions_derivatives_for_layer_matrix_create(
-            neural_network, layer_index);
-
-        dr_matrix AFD_mult_E = dr_matrix_multiplication_create(AFD, E);
-        dr_matrix_free(&AFD);
-
-        const dr_matrix O = neural_network.layers[layer_index - 1];
-        dr_matrix O_T     = dr_matrix_transpose_create(O);
-
-        dr_matrix W_delta = dr_matrix_dot_create(AFD_mult_E, O_T);
-        dr_matrix_scale_write(W_delta, learning_rate, W_delta);
-        dr_matrix_free(&AFD_mult_E);
-        dr_matrix_free(&O_T);
-
-        dr_matrix_addition_write(W, W_delta, W);
-        dr_matrix_free(&W_delta);
+        dr_matrix W = neural_network.connections[layer_index - 1];
+        dr_neural_network_details_update_E_W_next(neural_network, output_error_matrix, W, &E, &W_next, layer_index);
+        dr_neural_network_details_apply_W_delta(neural_network, E, W, learning_rate, layer_index);
     }
 
     dr_matrix_free(&E);

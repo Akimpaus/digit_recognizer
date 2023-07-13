@@ -74,16 +74,10 @@ void dr_neural_network_unchecked_forward_propagation(dr_neural_network neural_ne
 
 void dr_neural_network_forward_propagation(dr_neural_network neural_network);
 
-dr_matrix dr_neural_network_unchecked_activation_functions_derivatives_for_layer_matrix_create(
-    const dr_neural_network neural_network, const size_t layer_index);
-
-dr_matrix dr_neural_network_activation_functions_derivatives_for_layer_matrix_create(
-    const dr_neural_network neural_network, const size_t layer_index); // test
-
 void dr_neural_network_unchecked_back_propagation(
-    dr_neural_network neural_network, const DR_FLOAT_TYPE learning_rate, const dr_matrix error); // TODO
+    dr_neural_network neural_network, const DR_FLOAT_TYPE learning_rate, const dr_matrix output_error_matrix);
 
-// void dr_neural_network_back_propagation(dr_neural_network neural_network, const DR_FLOAT_TYPE* errors); // test
+void dr_neural_network_back_propagation(dr_neural_network neural_network, const dr_matrix output_error_matrix); // test
 
 void dr_neural_network_print(const dr_neural_network neural_network);
 

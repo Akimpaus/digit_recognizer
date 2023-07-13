@@ -15,7 +15,7 @@
 static void* dr_malloc(const size_t size) {
     void* ptr = malloc(size);
     if (!ptr) {
-        fprintf(stderr, "%s %zu %s\n", "Error when trying to allocate memory under", size, "bytes");
+        fprintf(stderr, "%s %zu %s\n", "Error when trying to allocate memory for", size, "bytes");
         exit(-1);
     }
     return ptr;
