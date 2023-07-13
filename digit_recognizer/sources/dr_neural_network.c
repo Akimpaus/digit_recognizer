@@ -143,7 +143,7 @@ void dr_neural_network_forward_propagation(dr_neural_network neural_network) {
     dr_neural_network_unchecked_forward_propagation(neural_network);
 }
 
-static inline dr_matrix dr_neural_network_details_unchecked_activation_functions_derivatives_for_layer_matrix_create(
+static inline dr_matrix dr_neural_network_details_activation_functions_derivatives_for_layer_matrix_create(
     const dr_neural_network neural_network, const size_t layer_index) {
     const dr_matrix layer       = neural_network.layers[layer_index];
     dr_matrix result            = dr_matrix_alloc(layer.width, layer.height);
@@ -184,7 +184,7 @@ static inline void dr_neural_network_details_update_E_W_next(const dr_neural_net
 static inline dr_matrix dr_neural_network_details_W_delta_create(
     const dr_neural_network neural_network, const dr_matrix E,
     const DR_FLOAT_TYPE learning_rate, const size_t layer_index) {
-    dr_matrix AFD = dr_neural_network_details_unchecked_activation_functions_derivatives_for_layer_matrix_create(
+    dr_matrix AFD = dr_neural_network_details_activation_functions_derivatives_for_layer_matrix_create(
         neural_network, layer_index);
 
     dr_matrix AFD_mult_E = dr_matrix_multiplication_create(AFD, E);
@@ -221,6 +221,11 @@ void dr_neural_network_unchecked_back_propagation( // TODO make all unchecked he
 
     dr_matrix_free(&E);
     dr_matrix_free(&W_next);
+}
+
+void dr_neural_network_back_propagation(
+    dr_neural_network neural_network, const DR_FLOAT_TYPE learning_rate, const dr_matrix output_error_matrix) {
+    dr_neural_network_unchecked_back_propagation(neural_network, learning_rate, output_error_matrix);
 }
 
 void dr_neural_network_print(const dr_neural_network neural_network) {
