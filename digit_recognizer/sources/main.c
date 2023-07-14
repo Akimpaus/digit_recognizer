@@ -1,3 +1,4 @@
+#include <time.h>
 #include "dr_neural_network.h"
 
 int main() {
