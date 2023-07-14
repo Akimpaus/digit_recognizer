@@ -4,19 +4,21 @@
 int main() {
     srand(time(NULL));
 
-    DR_FLOAT_TYPE inputs[4][2] = {
-        { 1, 0 },
-        { 1, 1 },
-        { 0, 1 },
-        { 0, 0 }
-    };
 
-    DR_FLOAT_TYPE outputs[4] = {
-        1,
-        0,
-        1,
-        0
-    };
+    const size_t train_data_height = 4;
+
+    DR_FLOAT_TYPE** inputs  = dr_array_2d_alloc(2, train_data_height);
+    DR_FLOAT_TYPE** outputs = dr_array_2d_alloc(1, train_data_height);
+
+    inputs[0][0] = 1; inputs[0][1] = 0;
+    inputs[1][0] = 1; inputs[1][1] = 1;
+    inputs[2][0] = 0; inputs[2][1] = 1;
+    inputs[3][0] = 0; inputs[3][1] = 0;
+
+    outputs[0][0] = 1;
+    outputs[1][0] = 0;
+    outputs[2][0] = 1;
+    outputs[3][0] = 0;
 
     const size_t layers[]     = { 2, 3, 1 };
     const size_t layers_count = DR_ARRAY_LENGTH(layers);
@@ -26,29 +28,7 @@ int main() {
 
     dr_neural_network_randomize_weights(nn, 0, 1);
 
-    for (size_t i = 0; i < 1000000; ++i) {
-        for (size_t j = 0; j < 4; ++j) {
-            dr_neural_network_set_input(nn, inputs[j]);
-            dr_neural_network_unchecked_forward_propagation(nn);
-
-            dr_matrix expected_output = dr_matrix_alloc(1, 1);
-            dr_matrix real_output     = dr_matrix_alloc(1, 1);
-            dr_matrix error           = dr_matrix_alloc(1, 1);
-
-            expected_output.elements[0] = outputs[j];
-            dr_neural_network_get_output(nn, real_output.elements);
-            dr_matrix_subtraction_write(expected_output, real_output, error);
-            const DR_FLOAT_TYPE err_sq = pow(error.elements[0], 2);
-            //printf("error:%f - error^2:%f\n", error.elements[0], err_sq);
-            //error.elements[0] = err_sq;
-
-            dr_neural_network_unchecked_back_propagation(nn, 0.01, error);
-
-            dr_matrix_free(&expected_output);
-            dr_matrix_free(&real_output);
-            dr_matrix_free(&error);
-        }
-    }
+    dr_neural_network_train(nn, 0.01, 1000000, (const DR_FLOAT_TYPE**)inputs, (const DR_FLOAT_TYPE**)outputs, 4);
 
     for (size_t i = 0; i < 4; ++i) {
         dr_neural_network_set_input(nn, inputs[i]);
@@ -57,5 +37,7 @@ int main() {
     }
 
     dr_neural_network_free(&nn);
+    dr_array_2d_free(inputs, train_data_height);
+    dr_array_2d_free(outputs, train_data_height);
     return 0;
 }

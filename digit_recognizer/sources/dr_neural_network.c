@@ -155,9 +155,10 @@ static inline dr_matrix dr_neural_network_details_activation_functions_derivativ
     return result;
 }
 
-static inline void dr_neural_network_details_update_E_W_next_output_layer(
-    const dr_matrix output_error_matrix, const dr_matrix W, dr_matrix* E, dr_matrix* W_next) {
-    *E      = dr_matrix_unchecked_copy_create(output_error_matrix);
+static inline void dr_neural_network_details_update_E_W_next_output_layer(const dr_neural_network neural_network,
+    const DR_FLOAT_TYPE* output_errors, const dr_matrix W, dr_matrix* E, dr_matrix* W_next) {
+    const size_t last_layer_size = neural_network.layers[neural_network.layers_count - 1].height;
+    *E      = dr_matrix_create_from_array(output_errors, 1, last_layer_size);
     *W_next = dr_matrix_unchecked_copy_create(W);
 }
 
@@ -173,9 +174,9 @@ static inline void dr_neural_network_details_update_E_W_next_hidden_layer(
 }
 
 static inline void dr_neural_network_details_update_E_W_next(const dr_neural_network neural_network,
-    const dr_matrix output_error_matrix, const dr_matrix W, dr_matrix* E, dr_matrix* W_next, const size_t layer_index) {
+    const DR_FLOAT_TYPE* output_errors, const dr_matrix W, dr_matrix* E, dr_matrix* W_next, const size_t layer_index) {
     if (layer_index - 1 == neural_network.connections_count - 1) {
-        dr_neural_network_details_update_E_W_next_output_layer(output_error_matrix, W, E, W_next);
+        dr_neural_network_details_update_E_W_next_output_layer(neural_network, output_errors, W, E, W_next);
     } else {
         dr_neural_network_details_update_E_W_next_hidden_layer(W, E, W_next);
     }
@@ -209,13 +210,13 @@ static inline void dr_neural_network_details_apply_W_delta(const dr_neural_netwo
 }
 
 void dr_neural_network_unchecked_back_propagation(
-    dr_neural_network neural_network, const DR_FLOAT_TYPE learning_rate, const dr_matrix output_error_matrix) {
+    dr_neural_network neural_network, const DR_FLOAT_TYPE learning_rate, const DR_FLOAT_TYPE* output_errors) {
     dr_matrix E      = dr_matrix_create_empty();
     dr_matrix W_next = dr_matrix_create_empty();
 
     for (size_t layer_index = neural_network.layers_count - 1; layer_index > 0; --layer_index) {
         dr_matrix W = neural_network.connections[layer_index - 1];
-        dr_neural_network_details_update_E_W_next(neural_network, output_error_matrix, W, &E, &W_next, layer_index);
+        dr_neural_network_details_update_E_W_next(neural_network, output_errors, W, &E, &W_next, layer_index);
         dr_neural_network_details_apply_W_delta(neural_network, E, W, learning_rate, layer_index);
     }
 
@@ -224,15 +225,89 @@ void dr_neural_network_unchecked_back_propagation(
 }
 
 void dr_neural_network_back_propagation(
-    dr_neural_network neural_network, const DR_FLOAT_TYPE learning_rate, const dr_matrix output_error_matrix) {
+    dr_neural_network neural_network, const DR_FLOAT_TYPE learning_rate, const DR_FLOAT_TYPE* output_errors) {
     DR_ASSERT_MSG(dr_neural_network_valid(neural_network),
         "attempt to call a back propagation for a not valid neural network");
-    const dr_matrix* output_layer = neural_network.layers + (neural_network.layers_count - 1);
-    DR_ASSERT_MSG(
-        output_error_matrix.width == output_layer->width && output_error_matrix.height == output_layer->height,
-        "the sizes of the error matrix does not coincide with the sizes of the output layer of the neural network "
-        "in back propagation");
-    dr_neural_network_unchecked_back_propagation(neural_network, learning_rate, output_error_matrix);
+    DR_ASSERT_MSG(output_errors, "attempt to call back_propagation for the neural network with NULL output_errors");
+    dr_neural_network_unchecked_back_propagation(neural_network, learning_rate, output_errors);
+}
+
+void dr_neural_network_unchecked_train(
+    dr_neural_network neural_network, const DR_FLOAT_TYPE learning_rate, const size_t epochs,
+    const DR_FLOAT_TYPE** inputs, const DR_FLOAT_TYPE** outputs, const size_t count) {
+    const size_t neural_network_output_size = dr_neural_network_unchecked_output_size(neural_network);
+
+    DR_FLOAT_TYPE* errors      = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE) * neural_network_output_size);
+    DR_FLOAT_TYPE* real_output = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE) * neural_network_output_size);
+
+    for (size_t epoch = 0; epoch < epochs; ++epoch) {
+        for (size_t data_index = 0; data_index < count; ++data_index) {
+            const DR_FLOAT_TYPE* input         = inputs[data_index];
+            const DR_FLOAT_TYPE* target_output = outputs[data_index];
+
+            dr_neural_network_unchecked_set_input(neural_network, input);
+            dr_neural_network_unchecked_forward_propagation(neural_network);
+            dr_neural_network_unchecked_get_output(neural_network, real_output);
+
+            for (size_t i = 0; i < neural_network_output_size; ++i) {
+                errors[i] = target_output[i] - real_output[i];
+            }
+
+            dr_neural_network_unchecked_back_propagation(neural_network, learning_rate, errors);
+        }
+    }
+
+    DR_FREE(errors);
+    DR_FREE(real_output);
+}
+
+void dr_neural_network_train(
+    dr_neural_network neural_network, const DR_FLOAT_TYPE learning_rate, const size_t epochs,
+    const DR_FLOAT_TYPE** inputs, const DR_FLOAT_TYPE** outputs, const size_t count) {
+    DR_ASSERT_MSG(dr_neural_network_valid(neural_network), "attempt to train a not valid neural network");
+    DR_ASSERT_MSG(inputs, "attempt to train a neural network with a null inputs");
+    DR_ASSERT_MSG(inputs, "attempt to train a neural network with a null outputs");
+    DR_ASSERT_MSG(epochs > 0, "attempt to train a neural network with zero epochs");
+    DR_ASSERT_MSG(count > 0, "attempt to train a neural network with empty train data");
+    dr_neural_network_unchecked_train(neural_network, learning_rate, epochs, inputs, outputs, count);
+}
+
+void dr_neural_network_unchecked_prediction_write(
+    const dr_neural_network neural_network, const DR_FLOAT_TYPE* input, dr_matrix prediction) {
+    dr_neural_network_unchecked_set_input(neural_network, input);
+    dr_neural_network_unchecked_forward_propagation(neural_network);
+    const dr_matrix output_layer = neural_network.layers[neural_network.layers_count - 1];
+    const size_t output_size     = output_layer.width * output_layer.height;
+    for (size_t i = 0; i < output_size; ++i) {
+        prediction.elements[i] = output_layer.elements[i];
+    }
+}
+
+void dr_neural_network_prediction_write(
+    const dr_neural_network neural_network, const DR_FLOAT_TYPE* input, dr_matrix prediction) {
+    DR_ASSERT_MSG(dr_neural_network_valid(neural_network),
+        "attempt to write a prediction with a not valid neural network");
+    DR_ASSERT_MSG(input, "attempt to write a neural network prediction with a NULL input");
+    DR_ASSERT_MSG(prediction.elements,
+        "attempt to write a neural network prediction to a NULL matrix");
+    DR_ASSERT_MSG(prediction.width == 1 && prediction.height == dr_neural_network_unchecked_output_size(neural_network),
+        "attempt to write a neural network prediction to a matrix with wrong size");
+    dr_neural_network_unchecked_prediction_write(neural_network, input, prediction);
+}
+
+dr_matrix dr_neural_network_unchecked_prediction_create(
+    const dr_neural_network neural_network, const DR_FLOAT_TYPE* input) {
+    const size_t output_size = dr_neural_network_output_size(neural_network);
+    dr_matrix prediction = dr_matrix_alloc(1, output_size);
+    dr_neural_network_unchecked_prediction_write(neural_network, input, prediction);
+    return prediction;
+}
+
+dr_matrix dr_neural_network_prediction_create(const dr_neural_network neural_network, const DR_FLOAT_TYPE* input) {
+    DR_ASSERT_MSG(dr_neural_network_valid(neural_network),
+        "attempt to create a prediction with a not valid neural network");
+    DR_ASSERT_MSG(input, "attempt to create a neural network prediction with a NULL input");
+    return dr_neural_network_unchecked_prediction_create(neural_network, input);
 }
 
 void dr_neural_network_print(const dr_neural_network neural_network) {
