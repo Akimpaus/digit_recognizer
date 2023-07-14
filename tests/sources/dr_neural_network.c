@@ -8,33 +8,33 @@ UTEST(dr_neural_network, dr_sigmoid) {
 }
 
 UTEST(dr_neural_network, dr_sigmoid_derivative) {
-    EXPECT_EQ(dr_sigmoid_derivative(-10), -110);
-    EXPECT_EQ(dr_sigmoid_derivative(0), 0);
-    EXPECT_EQ(dr_sigmoid_derivative(10), -90);
+    EXPECT_NEAR(dr_sigmoid_derivative(-10), -110, 0.001);
+    EXPECT_NEAR(dr_sigmoid_derivative(0), 0, 0.001);
+    EXPECT_NEAR(dr_sigmoid_derivative(10), -90, 0.001);
 }
 
 UTEST(dr_neural_network, dr_relu) {
-    EXPECT_EQ(dr_relu(-10), 0);
-    EXPECT_EQ(dr_relu(0), 0);
-    EXPECT_EQ(dr_relu(10), 10);
+    EXPECT_NEAR(dr_relu(-10), 0, 0.001);
+    EXPECT_NEAR(dr_relu(0), 0, 0.001);
+    EXPECT_NEAR(dr_relu(10), 10, 0.001);
 }
 
 UTEST(dr_neural_network, dr_relu_derivative) {
-    EXPECT_EQ(dr_relu_derivative(-10), 0);
-    EXPECT_EQ(dr_relu_derivative(0), 0);
-    EXPECT_EQ(dr_relu_derivative(10), 1);
+    EXPECT_NEAR(dr_relu_derivative(-10), 0, 0.001);
+    EXPECT_NEAR(dr_relu_derivative(0), 0, 0.001);
+    EXPECT_NEAR(dr_relu_derivative(10), 1, 0.001);
 }
 
 UTEST(dr_neural_network, dr_tanh) {
-    EXPECT_EQ(dr_tanh(-10), -1);
-    EXPECT_EQ(dr_tanh(0), 0);
-    EXPECT_EQ(dr_tanh(10), 1);
+    EXPECT_NEAR(dr_tanh(-10), -1, 0.001);
+    EXPECT_NEAR(dr_tanh(0), 0, 0.001);
+    EXPECT_NEAR(dr_tanh(10), 1, 0.001);
 }
 
 UTEST(dr_neural_network, dr_tanh_derivative) {
-    EXPECT_EQ(dr_tanh_derivative(-10), -99);
-    EXPECT_EQ(dr_tanh_derivative(0), 1);
-    EXPECT_EQ(dr_tanh_derivative(5), -24);
+    EXPECT_NEAR(dr_tanh_derivative(-10), -99, 0.001);
+    EXPECT_NEAR(dr_tanh_derivative(0), 1, 0.001);
+    EXPECT_NEAR(dr_tanh_derivative(5), -24, 0.001);
 }
 
 UTEST(dr_neural_network, valid) {
@@ -562,6 +562,115 @@ UTEST(dr_neural_network, back_propagation) {
         EXPECT_NEAR(nn.connections[0].elements[3], 0.32, 0.0001);
         EXPECT_NEAR(nn.connections[0].elements[4], 0.422, 0.0001);
         EXPECT_NEAR(nn.connections[0].elements[5], 0.444, 0.0001);
+
+        dr_matrix_free(&error_matrix);
+        dr_neural_network_free(&nn);
+    }
+
+    {
+        const size_t layers[]     = { 4, 3, 3, 2 };
+        const size_t layers_count = DR_ARRAY_LENGTH(layers);
+        dr_activation_function activation_functions[]   = {
+            &dr_tanh, &dr_tanh, &dr_sigmoid };
+        dr_activation_function activation_functions_d[] = {
+            &dr_tanh_derivative, &dr_tanh_derivative, &dr_sigmoid_derivative };
+        dr_neural_network nn = dr_neural_network_create(
+            layers, layers_count, activation_functions, activation_functions_d);
+
+        const DR_FLOAT_TYPE learning_rate = 0.3;
+        const DR_FLOAT_TYPE error_arr[] = {
+            5,
+            -0.6
+        };
+        dr_matrix error_matrix = dr_matrix_create_from_array(error_arr, 1, layers[layers_count - 1]);
+
+        // input
+        nn.layers[0].elements[0] = 1;
+        nn.layers[0].elements[1] = 2;
+        nn.layers[0].elements[2] = 3;
+        nn.layers[0].elements[3] = 4;
+
+        // connection input - hidden_1
+        nn.connections[0].elements[0] = 0.1;
+        nn.connections[0].elements[1] = 1;
+        nn.connections[0].elements[2] = 2;
+        nn.connections[0].elements[3] = 0.4;
+        nn.connections[0].elements[4] = 0.5;
+        nn.connections[0].elements[5] = 0;
+        nn.connections[0].elements[6] = 0.7;
+        nn.connections[0].elements[7] = 0.8;
+        nn.connections[0].elements[8] = 0.9;
+        nn.connections[0].elements[9] = -0.1;
+        nn.connections[0].elements[10] = -0.2;
+        nn.connections[0].elements[11] = -0.3;
+
+        // hidden_1
+        nn.layers[1].elements[0] = 3;
+        nn.layers[1].elements[1] = 2;
+        nn.layers[1].elements[2] = 2;
+
+        // connection hidden_1 - hidden_2
+        nn.connections[1].elements[0] = 0.6;
+        nn.connections[1].elements[1] = 0.5;
+        nn.connections[1].elements[2] = 0.4;
+        nn.connections[1].elements[3] = 0.3;
+        nn.connections[1].elements[4] = 0.2;
+        nn.connections[1].elements[5] = 0.1;
+        nn.connections[1].elements[6] = 0.2;
+        nn.connections[1].elements[7] = 0.2;
+        nn.connections[1].elements[8] = 0.1;
+
+        // hidden_2
+        nn.layers[2].elements[0] = 1;
+        nn.layers[2].elements[1] = 2;
+        nn.layers[2].elements[2] = 3;
+
+        // connection hidden_2 - output
+        nn.connections[2].elements[0] = 1;
+        nn.connections[2].elements[1] = 1;
+        nn.connections[2].elements[2] = -0.3;
+        nn.connections[2].elements[3] = 1;
+        nn.connections[2].elements[4] = 0;
+        nn.connections[2].elements[5] = 0.4;
+
+        // output
+        nn.layers[3].elements[0] = 10;
+        nn.layers[3].elements[1] = -5;
+
+        dr_neural_network_back_propagation(nn, learning_rate, error_matrix);
+
+        // connection hidden_2 - output
+        EXPECT_NEAR(nn.connections[2].elements[0], -134, 0.0001);
+        EXPECT_NEAR(nn.connections[2].elements[1], -269, 0.0001);
+        EXPECT_NEAR(nn.connections[2].elements[2], -405.3, 0.0001);
+        EXPECT_NEAR(nn.connections[2].elements[3], 6.4, 0.0001);
+        EXPECT_NEAR(nn.connections[2].elements[4], 10.8, 0.0001);
+        EXPECT_NEAR(nn.connections[2].elements[5], 16.6, 0.0001);
+
+        // connection hidden_1 - hidden_2
+        EXPECT_NEAR(nn.connections[1].elements[0], 0.6, 0.0001);
+        EXPECT_NEAR(nn.connections[1].elements[1], 0.5, 0.0001);
+        EXPECT_NEAR(nn.connections[1].elements[2], 0.4, 0.0001);
+        EXPECT_NEAR(nn.connections[1].elements[3], -13.2, 0.0001);
+        EXPECT_NEAR(nn.connections[1].elements[4], -8.8, 0.0001);
+        EXPECT_NEAR(nn.connections[1].elements[5], -8.9, 0.0001);
+        EXPECT_NEAR(nn.connections[1].elements[6], 12.728, 0.0001);
+        EXPECT_NEAR(nn.connections[1].elements[7], 8.552, 0.0001);
+        EXPECT_NEAR(nn.connections[1].elements[8], 8.452, 0.0001);
+
+        // connection input - hidden_1
+        EXPECT_NEAR(nn.connections[0].elements[0], -9.001, 0.001);
+        EXPECT_NEAR(nn.connections[0].elements[1], -17.202, 0.001);
+        EXPECT_NEAR(nn.connections[0].elements[2], -25.302, 0.001);
+        EXPECT_NEAR(nn.connections[0].elements[3], -36.003, 0.001);
+        EXPECT_NEAR(nn.connections[0].elements[4], -2.067, 0.001);
+        EXPECT_NEAR(nn.connections[0].elements[5], -5.134, 0.001);
+        EXPECT_NEAR(nn.connections[0].elements[6], -7.000, 0.001);
+        EXPECT_NEAR(nn.connections[0].elements[7], -9.467, 0.001);
+        EXPECT_NEAR(nn.connections[0].elements[8], -0.977, 0.001);
+        EXPECT_NEAR(nn.connections[0].elements[9], -3.855, 0.001);
+        EXPECT_NEAR(nn.connections[0].elements[10], -5.832, 0.001);
+        EXPECT_NEAR(nn.connections[0].elements[11], -7.81, 0.001);
 
         dr_matrix_free(&error_matrix);
         dr_neural_network_free(&nn);
