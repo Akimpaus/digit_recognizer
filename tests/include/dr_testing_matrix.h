@@ -2,7 +2,7 @@
 #define DR_TESTING_H
 
 #include <utest.h>
-#include <dr_matrix.h>
+#include <neural_network/dr_matrix.h>
 
 static bool dr_testing_matrix_filled(const dr_matrix matrix, const DR_FLOAT_TYPE val) {
     const size_t size = matrix.width * matrix.height;

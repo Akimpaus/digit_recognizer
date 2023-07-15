@@ -1,5 +1,5 @@
-#include "dr_neural_network.h"
 #include <string.h>
+#include <neural_network/dr_neural_network.h>
 
 bool dr_neural_network_valid(const dr_neural_network neural_network) {
     return (neural_network.layers_count >= 2) &&

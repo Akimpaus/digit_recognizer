@@ -2,7 +2,7 @@
 #define DR_TESTING_NEURAL_NETWORK_H
 
 #include "dr_testing_matrix.h"
-#include <dr_neural_network.h>
+#include <neural_network/dr_neural_network.h>
 
 static dr_activation_function dr_testing_neural_network_activation_functions_plug[] = {
     &dr_tanh,

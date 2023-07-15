@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
-#include "dr_utils.h"
+#include <dr_utils.h>
 
 typedef struct {
     DR_FLOAT_TYPE* elements;
