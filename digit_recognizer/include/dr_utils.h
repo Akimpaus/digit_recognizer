@@ -4,15 +4,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-// TODO: use dr_array_alloc instead of manually allocation of array.
-
 #define DR_FLOAT_TYPE float
-
-#if defined(__cplusplus)
-# define DR_CLITERAL(type) type
-#else
-# define DR_CLITERAL(type) (type)
-#endif
 
 static inline void* dr_malloc(const size_t size) {
     void* ptr = malloc(size);
@@ -65,26 +57,17 @@ static inline void dr_print_spaces(const size_t count) {
     }
 }
 
-static inline DR_FLOAT_TYPE* dr_array_alloc(const size_t length) { // test
-    DR_FLOAT_TYPE* array = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE) * length);
-    return array;
-}
-
-static inline void dr_array_free(DR_FLOAT_TYPE* array) { // test
-    DR_FREE(array);
-}
-
-static inline DR_FLOAT_TYPE** dr_array_2d_alloc(const size_t width, const size_t height) {
+static inline DR_FLOAT_TYPE** dr_array_2d_float_alloc(const size_t width, const size_t height) {
     DR_FLOAT_TYPE** array = (DR_FLOAT_TYPE**)DR_MALLOC(sizeof(DR_FLOAT_TYPE*) * height);
     for (size_t i = 0; i < height; ++i) {
-        array[i] = dr_array_alloc(width);
+        array[i] = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE) * width);
     }
     return array;
 }
 
-static inline void dr_array_2d_free(DR_FLOAT_TYPE** array, const size_t height) {
+static inline void dr_array_2d_float_free(DR_FLOAT_TYPE** array, const size_t height) {
     for (size_t i = 0; i < height; ++i) {
-        dr_array_free(array[i]);
+        DR_FREE(array[i]);
     }
     DR_FREE(array);
 }

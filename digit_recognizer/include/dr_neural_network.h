@@ -36,7 +36,7 @@ static inline DR_FLOAT_TYPE dr_tanh(const DR_FLOAT_TYPE value) {
 }
 
 static inline DR_FLOAT_TYPE dr_tanh_derivative(const DR_FLOAT_TYPE value) {
-    return 1 - pow(value, 2);
+    return 1.0 - pow(value, 2);
 }
 
 bool dr_neural_network_valid(const dr_neural_network neural_network);
@@ -82,11 +82,11 @@ void dr_neural_network_back_propagation(
 
 void dr_neural_network_unchecked_train(
     dr_neural_network neural_network, const DR_FLOAT_TYPE learning_rate, const size_t epochs,
-    const DR_FLOAT_TYPE** inputs, const DR_FLOAT_TYPE** outputs, const size_t count);
+    const DR_FLOAT_TYPE** trains_inputs, const DR_FLOAT_TYPE** trains_outputs, const size_t train_count);
 
 void dr_neural_network_train(
     dr_neural_network neural_network, const DR_FLOAT_TYPE learning_rate, const size_t epochs,
-    const DR_FLOAT_TYPE** inputs, const DR_FLOAT_TYPE** outputs, const size_t count); // test
+    const DR_FLOAT_TYPE** train_inputs, const DR_FLOAT_TYPE** train_outputs, const size_t train_count);
 
 void dr_neural_network_unchecked_prediction_write(
     const dr_neural_network neural_network, const DR_FLOAT_TYPE* input, dr_matrix prediction);

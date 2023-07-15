@@ -234,16 +234,16 @@ void dr_neural_network_back_propagation(
 
 void dr_neural_network_unchecked_train(
     dr_neural_network neural_network, const DR_FLOAT_TYPE learning_rate, const size_t epochs,
-    const DR_FLOAT_TYPE** inputs, const DR_FLOAT_TYPE** outputs, const size_t count) {
+    const DR_FLOAT_TYPE** train_inputs, const DR_FLOAT_TYPE** train_outputs, const size_t train_count) {
     const size_t neural_network_output_size = dr_neural_network_unchecked_output_size(neural_network);
 
     DR_FLOAT_TYPE* errors      = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE) * neural_network_output_size);
     DR_FLOAT_TYPE* real_output = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE) * neural_network_output_size);
 
     for (size_t epoch = 0; epoch < epochs; ++epoch) {
-        for (size_t data_index = 0; data_index < count; ++data_index) {
-            const DR_FLOAT_TYPE* input         = inputs[data_index];
-            const DR_FLOAT_TYPE* target_output = outputs[data_index];
+        for (size_t data_index = 0; data_index < train_count; ++data_index) {
+            const DR_FLOAT_TYPE* input         = train_inputs[data_index];
+            const DR_FLOAT_TYPE* target_output = train_outputs[data_index];
 
             dr_neural_network_unchecked_set_input(neural_network, input);
             dr_neural_network_unchecked_forward_propagation(neural_network);
@@ -263,13 +263,13 @@ void dr_neural_network_unchecked_train(
 
 void dr_neural_network_train(
     dr_neural_network neural_network, const DR_FLOAT_TYPE learning_rate, const size_t epochs,
-    const DR_FLOAT_TYPE** inputs, const DR_FLOAT_TYPE** outputs, const size_t count) {
+    const DR_FLOAT_TYPE** train_inputs, const DR_FLOAT_TYPE** train_outputs, const size_t train_count) {
     DR_ASSERT_MSG(dr_neural_network_valid(neural_network), "attempt to train a not valid neural network");
-    DR_ASSERT_MSG(inputs, "attempt to train a neural network with a null inputs");
-    DR_ASSERT_MSG(inputs, "attempt to train a neural network with a null outputs");
+    DR_ASSERT_MSG(train_inputs, "attempt to train a neural network with a null train_inputs");
+    DR_ASSERT_MSG(train_inputs, "attempt to train a neural network with a null train_outputs");
     DR_ASSERT_MSG(epochs > 0, "attempt to train a neural network with zero epochs");
-    DR_ASSERT_MSG(count > 0, "attempt to train a neural network with empty train data");
-    dr_neural_network_unchecked_train(neural_network, learning_rate, epochs, inputs, outputs, count);
+    DR_ASSERT_MSG(train_count > 0, "attempt to train a neural network with empty train data");
+    dr_neural_network_unchecked_train(neural_network, learning_rate, epochs, train_inputs, train_outputs, train_count);
 }
 
 void dr_neural_network_unchecked_prediction_write(

@@ -681,7 +681,7 @@ UTEST(dr_neural_network, prediction_write) {
 
         nn.connections[0].elements[0] = 2;
 
-        DR_FLOAT_TYPE* input = dr_array_alloc(1);
+        DR_FLOAT_TYPE* input = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE));
         input[0]             = 0;
         dr_matrix prediction = dr_matrix_alloc(1, 1);
         dr_neural_network_prediction_write(nn, input, prediction);
@@ -690,7 +690,7 @@ UTEST(dr_neural_network, prediction_write) {
 
         dr_neural_network_free(&nn);
         dr_matrix_free(&prediction);
-        dr_array_free(input);
+        DR_FREE(input);
     }
 
     {
@@ -705,7 +705,7 @@ UTEST(dr_neural_network, prediction_write) {
         nn.connections[0].elements[2] = 0.2;
         nn.connections[0].elements[3] = 0.8;
 
-        DR_FLOAT_TYPE* input = dr_array_alloc(2);
+        DR_FLOAT_TYPE* input = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE) * 2);
         input[0]             = 1;
         input[1]             = 0.5;
         dr_matrix prediction = dr_matrix_alloc(1, 2);
@@ -716,7 +716,7 @@ UTEST(dr_neural_network, prediction_write) {
 
         dr_neural_network_free(&nn);
         dr_matrix_free(&prediction);
-        dr_array_free(input);
+        DR_FREE(input);
     }
 
     {
@@ -742,7 +742,7 @@ UTEST(dr_neural_network, prediction_write) {
         nn.connections[2].elements[1] = 3;
         nn.connections[2].elements[2] = 0;
 
-        DR_FLOAT_TYPE* input = dr_array_alloc(2);
+        DR_FLOAT_TYPE* input = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE) * 2);
         input[0]             = 1;
         input[1]             = 0.5;
         dr_matrix prediction = dr_matrix_alloc(1, 1);
@@ -752,7 +752,7 @@ UTEST(dr_neural_network, prediction_write) {
 
         dr_neural_network_free(&nn);
         dr_matrix_free(&prediction);
-        dr_array_free(input);
+        DR_FREE(input);
     }
 }
 
@@ -766,7 +766,7 @@ UTEST(dr_neural_network, prediction_create) {
 
         nn.connections[0].elements[0] = 2;
 
-        DR_FLOAT_TYPE* input = dr_array_alloc(1);
+        DR_FLOAT_TYPE* input = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE));
         input[0]             = 0;
         dr_matrix prediction = dr_neural_network_prediction_create(nn, input);
 
@@ -774,7 +774,7 @@ UTEST(dr_neural_network, prediction_create) {
 
         dr_neural_network_free(&nn);
         dr_matrix_free(&prediction);
-        dr_array_free(input);
+        DR_FREE(input);
     }
 
     {
@@ -789,7 +789,7 @@ UTEST(dr_neural_network, prediction_create) {
         nn.connections[0].elements[2] = 0.2;
         nn.connections[0].elements[3] = 0.8;
 
-        DR_FLOAT_TYPE* input = dr_array_alloc(2);
+        DR_FLOAT_TYPE* input = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE) * 2);
         input[0]             = 1;
         input[1]             = 0.5;
         dr_matrix prediction = dr_neural_network_prediction_create(nn, input);
@@ -799,7 +799,7 @@ UTEST(dr_neural_network, prediction_create) {
 
         dr_neural_network_free(&nn);
         dr_matrix_free(&prediction);
-        dr_array_free(input);
+        DR_FREE(input);
     }
 
     {
@@ -825,7 +825,7 @@ UTEST(dr_neural_network, prediction_create) {
         nn.connections[2].elements[1] = 3;
         nn.connections[2].elements[2] = 0;
 
-        DR_FLOAT_TYPE* input = dr_array_alloc(2);
+        DR_FLOAT_TYPE* input = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE) * 2);
         input[0]             = 1;
         input[1]             = 0.5;
         dr_matrix prediction = dr_neural_network_prediction_create(nn, input);
@@ -834,6 +834,59 @@ UTEST(dr_neural_network, prediction_create) {
 
         dr_neural_network_free(&nn);
         dr_matrix_free(&prediction);
-        dr_array_free(input);
+        DR_FREE(input);
     }
+}
+
+UTEST(dr_neural_network, train) {
+    const size_t layers[]     = { 2, 3, 1 };
+    const size_t layers_count = DR_ARRAY_LENGTH(layers);
+    dr_activation_function activation_functions[]   = { &dr_tanh, &dr_tanh };
+    dr_activation_function activation_functions_d[] = { &dr_tanh_derivative, &dr_tanh_derivative };
+    dr_neural_network nn = dr_neural_network_create(layers, layers_count, activation_functions, activation_functions_d);
+
+    nn.connections[0].elements[0] = 1;
+    nn.connections[0].elements[1] = 0.4;
+    nn.connections[0].elements[2] = 0.1;
+    nn.connections[0].elements[3] = -0.3;
+    nn.connections[0].elements[4] = 0.1;
+    nn.connections[0].elements[5] = 0.1;
+
+    nn.connections[1].elements[0] = 0;
+    nn.connections[1].elements[1] = -0.1;
+    nn.connections[1].elements[2] = 0.7;
+
+    const size_t train_data_size = 4;
+    DR_FLOAT_TYPE** inputs       = dr_array_2d_float_alloc(2, train_data_size);
+    DR_FLOAT_TYPE** outputs      = dr_array_2d_float_alloc(1, train_data_size);
+
+    inputs[0][0] = 1; inputs[0][1] = 1;
+    inputs[1][0] = 0; inputs[1][1] = 0;
+    inputs[2][0] = 1; inputs[2][1] = 0;
+    inputs[3][0] = 0; inputs[3][1] = 1;
+
+    outputs[0][0] = 0;
+    outputs[1][0] = 0;
+    outputs[2][0] = 1;
+    outputs[3][0] = 1;
+
+    dr_neural_network_train(nn, 0.3, 100,
+        (const DR_FLOAT_TYPE**)inputs, (const DR_FLOAT_TYPE**)outputs, train_data_size);
+    dr_matrix prediction_1 = dr_neural_network_prediction_create(nn, inputs[0]);
+    dr_matrix prediction_2 = dr_neural_network_prediction_create(nn, inputs[1]);
+    dr_matrix prediction_3 = dr_neural_network_prediction_create(nn, inputs[2]);
+    dr_matrix prediction_4 = dr_neural_network_prediction_create(nn, inputs[3]);
+
+    EXPECT_NEAR(roundf(prediction_1.elements[0]), 0.0, 0.001);
+    EXPECT_NEAR(roundf(prediction_2.elements[0]), 0.0, 0.001);
+    EXPECT_NEAR(roundf(prediction_3.elements[0]), 1.0, 0.001);
+    EXPECT_NEAR(roundf(prediction_4.elements[0]), 1.0, 0.001);
+
+    dr_neural_network_free(&nn);
+    dr_array_2d_float_free(inputs, train_data_size);
+    dr_array_2d_float_free(outputs, train_data_size);
+    dr_matrix_free(&prediction_1);
+    dr_matrix_free(&prediction_2);
+    dr_matrix_free(&prediction_3);
+    dr_matrix_free(&prediction_4);
 }

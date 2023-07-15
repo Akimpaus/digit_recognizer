@@ -53,10 +53,10 @@ UTEST(dr_utils, dr_random_float) {
     }
 }
 
-UTEST(dr_utils, dr_array_2d_alloc) {
+UTEST(dr_utils, dr_array_2d_float_alloc) {
     const size_t width  = 2;
     const size_t height = 2;
-    DR_FLOAT_TYPE** array = dr_array_2d_alloc(2, 2);
+    DR_FLOAT_TYPE** array = dr_array_2d_float_alloc(2, 2);
 
     DR_FLOAT_TYPE val = 0;
     for (size_t y = 0; y < height; ++y) {
@@ -70,5 +70,5 @@ UTEST(dr_utils, dr_array_2d_alloc) {
     EXPECT_EQ(array[1][0], 2);
     EXPECT_EQ(array[1][1], 3);
 
-    dr_array_2d_free(array, height);
+    dr_array_2d_float_free(array, height);
 }

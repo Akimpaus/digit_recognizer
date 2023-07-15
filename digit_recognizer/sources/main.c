@@ -7,8 +7,8 @@ int main() {
 
     const size_t train_data_height = 4;
 
-    DR_FLOAT_TYPE** inputs  = dr_array_2d_alloc(2, train_data_height);
-    DR_FLOAT_TYPE** outputs = dr_array_2d_alloc(1, train_data_height);
+    DR_FLOAT_TYPE** inputs  = dr_array_2d_float_alloc(2, train_data_height);
+    DR_FLOAT_TYPE** outputs = dr_array_2d_float_alloc(1, train_data_height);
 
     inputs[0][0] = 1; inputs[0][1] = 0;
     inputs[1][0] = 1; inputs[1][1] = 1;
@@ -37,7 +37,7 @@ int main() {
     }
 
     dr_neural_network_free(&nn);
-    dr_array_2d_free(inputs, train_data_height);
-    dr_array_2d_free(outputs, train_data_height);
+    dr_array_2d_float_free(inputs, train_data_height);
+    dr_array_2d_float_free(outputs, train_data_height);
     return 0;
 }
