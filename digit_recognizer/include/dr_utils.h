@@ -2,6 +2,7 @@
 #define DR_UTILS_H
 
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
 #define DR_FLOAT_TYPE float
@@ -70,6 +71,15 @@ static inline void dr_array_2d_float_free(DR_FLOAT_TYPE** array, const size_t he
         DR_FREE(array[i]);
     }
     DR_FREE(array);
+}
+
+static inline char* dr_str_alloc(const char* str) {
+    char* new_str = DR_MALLOC(sizeof(char) * strlen(str));
+    if (!new_str) {
+        return NULL;
+    }
+    strcpy(new_str, str);
+    return new_str;
 }
 
 #endif // !DR_UTILS_H

@@ -1,4 +1,3 @@
-#include <utest.h>
 #include "dr_testing_neural_network.h"
 
 UTEST(dr_neural_network, dr_sigmoid) {
@@ -13,6 +12,18 @@ UTEST(dr_neural_network, dr_sigmoid_derivative) {
     EXPECT_NEAR(dr_sigmoid_derivative(10), -90, 0.001);
 }
 
+UTEST(dr_neural_network, dr_tanh) {
+    EXPECT_NEAR(dr_tanh(-10), -1, 0.001);
+    EXPECT_NEAR(dr_tanh(0), 0, 0.001);
+    EXPECT_NEAR(dr_tanh(10), 1, 0.001);
+}
+
+UTEST(dr_neural_network, dr_tanh_derivative) {
+    EXPECT_NEAR(dr_tanh_derivative(-10), -99, 0.001);
+    EXPECT_NEAR(dr_tanh_derivative(0), 1, 0.001);
+    EXPECT_NEAR(dr_tanh_derivative(5), -24, 0.001);
+}
+
 UTEST(dr_neural_network, dr_relu) {
     EXPECT_NEAR(dr_relu(-10), 0, 0.001);
     EXPECT_NEAR(dr_relu(0), 0, 0.001);
@@ -25,17 +36,6 @@ UTEST(dr_neural_network, dr_relu_derivative) {
     EXPECT_NEAR(dr_relu_derivative(10), 1, 0.001);
 }
 
-UTEST(dr_neural_network, dr_tanh) {
-    EXPECT_NEAR(dr_tanh(-10), -1, 0.001);
-    EXPECT_NEAR(dr_tanh(0), 0, 0.001);
-    EXPECT_NEAR(dr_tanh(10), 1, 0.001);
-}
-
-UTEST(dr_neural_network, dr_tanh_derivative) {
-    EXPECT_NEAR(dr_tanh_derivative(-10), -99, 0.001);
-    EXPECT_NEAR(dr_tanh_derivative(0), 1, 0.001);
-    EXPECT_NEAR(dr_tanh_derivative(5), -24, 0.001);
-}
 
 UTEST(dr_neural_network, valid) {
     {
@@ -889,4 +889,234 @@ UTEST(dr_neural_network, train) {
     dr_matrix_free(&prediction_2);
     dr_matrix_free(&prediction_3);
     dr_matrix_free(&prediction_4);
+}
+
+UTEST(dr_neural_network, dr_default_activation_function_to_string) {
+    {
+        char* str = dr_default_activation_function_to_string(&dr_sigmoid);
+        EXPECT_EQ(strcmp(str, DR_SIGMOID_STR), 0);
+        DR_FREE(str);
+    }
+
+    {
+        char* str = dr_default_activation_function_to_string(&dr_tanh);
+        EXPECT_EQ(strcmp(str, DR_TANH_STR), 0);
+        DR_FREE(str);
+    }
+
+    {
+        char* str = dr_default_activation_function_to_string(&dr_relu);
+        EXPECT_EQ(strcmp(str, DR_RELU_STR), 0);
+        DR_FREE(str);
+    }
+
+    {
+        char* str = dr_default_activation_function_to_string(&dr_testing_neural_network_func_nothing);
+        EXPECT_EQ(str, NULL);
+    }
+}
+
+UTEST(dr_neural_network, dr_default_activation_function_from_string) {
+    EXPECT_EQ(dr_default_activation_function_from_string(DR_SIGMOID_STR), &dr_sigmoid);
+    EXPECT_EQ(dr_default_activation_function_from_string(DR_TANH_STR), &dr_tanh);
+    EXPECT_EQ(dr_default_activation_function_from_string(DR_RELU_STR), &dr_relu);
+    EXPECT_EQ(dr_default_activation_function_from_string("NO"), NULL);
+}
+
+UTEST(dr_neural_network, dr_default_activation_function_derivative_to_string) {
+    {
+        char* str = dr_default_activation_function_derivative_to_string(&dr_sigmoid_derivative);
+        EXPECT_EQ(strcmp(str, DR_SIGMOID_DERIVATIVE_STR), 0);
+        DR_FREE(str);
+    }
+
+    {
+        char* str = dr_default_activation_function_derivative_to_string(&dr_tanh_derivative);
+        EXPECT_EQ(strcmp(str, DR_TANH_DERIVATIVE_STR), 0);
+        DR_FREE(str);
+    }
+
+    {
+        char* str = dr_default_activation_function_derivative_to_string(&dr_relu_derivative);
+        EXPECT_EQ(strcmp(str, DR_RELU_DERIVATIVE_STR), 0);
+        DR_FREE(str);
+    }
+
+    {
+        char* str = dr_default_activation_function_derivative_to_string(&dr_testing_neural_network_func_nothing);
+        EXPECT_EQ(str, NULL);
+    }
+}
+
+UTEST(dr_neural_network, dr_default_activation_function_derivative_from_string) {
+    EXPECT_EQ(dr_default_activation_function_derivative_from_string(DR_SIGMOID_DERIVATIVE_STR), &dr_sigmoid_derivative);
+    EXPECT_EQ(dr_default_activation_function_derivative_from_string(DR_TANH_DERIVATIVE_STR), &dr_tanh_derivative);
+    EXPECT_EQ(dr_default_activation_function_derivative_from_string(DR_RELU_DERIVATIVE_STR), &dr_relu_derivative);
+    EXPECT_EQ(dr_default_activation_function_derivative_from_string("NO"), NULL);
+}
+
+bool custom_activation_function_transformer_called = false;
+bool custom_activation_function_derivative_transformer_called = false;
+
+char* dr_testing_details_activation_function_to_string(const dr_activation_function activation_function) {
+    custom_activation_function_transformer_called = true;
+    return dr_str_alloc("TEST");
+}
+
+char* dr_testing_details_activation_function_derivative_to_string(const dr_activation_function activation_function) {
+    custom_activation_function_derivative_transformer_called = true;
+    return dr_str_alloc("TEST");
+}
+
+UTEST(dr_neural_network, save_to_file_custom_activation_function_transformer) {
+    const size_t layers[]     = { 2, 3, 1 };
+    const size_t layers_count = DR_ARRAY_LENGTH(layers);
+    dr_activation_function activation_functions[]   = { &dr_tanh, &dr_tanh };
+    dr_activation_function activation_functions_d[] = { &dr_tanh_derivative, &dr_tanh_derivative };
+    dr_neural_network nn = dr_neural_network_create(layers, layers_count, activation_functions, activation_functions_d);
+
+    EXPECT_FALSE(custom_activation_function_transformer_called);
+    EXPECT_FALSE(custom_activation_function_derivative_transformer_called);
+
+    const bool res = dr_neural_network_save_to_file_custom_activation_function_transformer(nn,
+        dr_testing_details_activation_function_to_string,
+        dr_testing_details_activation_function_derivative_to_string,
+        "test_save_to_file_custom_activation_function_transformer.txt");
+
+    EXPECT_TRUE(res);
+    EXPECT_TRUE(custom_activation_function_transformer_called);
+    EXPECT_TRUE(custom_activation_function_derivative_transformer_called);
+
+    dr_neural_network_free(&nn);
+}
+
+UTEST(dr_neural_network, save_to_file) {
+    {
+        const size_t layers[]     = { 2, 3, 1 };
+        const size_t layers_count = DR_ARRAY_LENGTH(layers);
+        dr_activation_function activation_functions[]   = { &dr_sigmoid, &dr_tanh };
+        dr_activation_function activation_functions_d[] = { &dr_sigmoid_derivative, &dr_tanh_derivative };
+        dr_neural_network nn =
+            dr_neural_network_create(layers, layers_count, activation_functions, activation_functions_d);
+
+        nn.connections[0].elements[0] = -1;
+        nn.connections[0].elements[1] = 2;
+        nn.connections[0].elements[2] = -3;
+        nn.connections[0].elements[3] = 4;
+        nn.connections[0].elements[4] = 5;
+        nn.connections[0].elements[5] = 10;
+
+        nn.connections[1].elements[0] = 0;
+        nn.connections[1].elements[1] = 0.6;
+        nn.connections[1].elements[2] = -0.2;
+
+        const bool res = dr_neural_network_save_to_file(nn, "test_save_to_file.txt");
+        EXPECT_TRUE(res);
+
+        FILE* file = fopen("test_save_to_file.txt", "r");
+        char buffer[256] = { 0 };
+        fscanf(file, "%s", buffer);
+        EXPECT_TRUE(strcmp(buffer, "DR_NEURAL_NETWORK_BEGIN") == 0);
+        size_t read_layers_count = 0;
+        fscanf(file, "%zu", &read_layers_count);
+        EXPECT_EQ(read_layers_count, layers_count);
+        size_t read_layer_size = 0;
+        fscanf(file, "%zu", &read_layer_size);
+        EXPECT_EQ(read_layer_size, layers[0]);
+
+        const size_t connection_count = read_layers_count - 1;
+        for (size_t i = 0; i < connection_count; ++i) {
+            const dr_matrix connection = nn.connections[i];
+            size_t read_width  = 0;
+            size_t read_height = 0;
+            fscanf(file, "%zu %zu", &read_width, &read_height);
+            EXPECT_EQ(read_width, connection.width);
+            EXPECT_EQ(read_height, connection.height);
+            for (size_t row = 0; row < read_height; ++row) {
+                for (size_t column = 0; column < read_width; ++column) {
+                    const float val = dr_matrix_unchecked_get_element(connection, column, row);
+                    float read_val = 0;
+                    fscanf(file, "%f", &read_val);
+                    EXPECT_NEAR(read_val, val, 0.001);
+                }
+            }
+            fscanf(file, "%zu", &read_layer_size);
+            EXPECT_EQ(read_layer_size, nn.layers[i + 1].height);
+            char* expected_func_name   = dr_default_activation_function_to_string(nn.activation_functions[i]);
+            char* expected_func_d_name =
+                dr_default_activation_function_derivative_to_string(nn.activation_functions_derivatives[i]);
+            fscanf(file, "%s", buffer);
+            EXPECT_EQ(strcmp(buffer, expected_func_name), 0);
+            fscanf(file, "%s", buffer);
+            EXPECT_EQ(strcmp(buffer, expected_func_d_name), 0);
+            DR_FREE(expected_func_name);
+            DR_FREE(expected_func_d_name);
+        }
+        fscanf(file, "%s", buffer);
+        EXPECT_EQ(strcmp(buffer, "DR_NEURAL_NETWORK_END"), 0);
+
+        fclose(file);
+        dr_neural_network_free(&nn);
+    }
+
+
+    {
+        const size_t layers[]     = { 4, 5, 2, 1 };
+        const size_t layers_count = DR_ARRAY_LENGTH(layers);
+        dr_activation_function activation_functions[]   = { &dr_sigmoid, &dr_relu, &dr_tanh };
+        dr_activation_function activation_functions_d[] =
+            { &dr_sigmoid_derivative, &dr_relu_derivative, &dr_tanh_derivative };
+        dr_neural_network nn =
+            dr_neural_network_create(layers, layers_count, activation_functions, activation_functions_d);
+
+        dr_neural_network_randomize_weights(nn, 0, 1);
+
+        const bool res = dr_neural_network_save_to_file(nn, "test_save_to_file.txt");
+        EXPECT_TRUE(res);
+
+        FILE* file = fopen("test_save_to_file.txt", "r");
+        char buffer[256] = { 0 };
+        fscanf(file, "%s", buffer);
+        EXPECT_TRUE(strcmp(buffer, "DR_NEURAL_NETWORK_BEGIN") == 0);
+        size_t read_layers_count = 0;
+        fscanf(file, "%zu", &read_layers_count);
+        EXPECT_EQ(read_layers_count, layers_count);
+        size_t read_layer_size = 0;
+        fscanf(file, "%zu", &read_layer_size);
+        EXPECT_EQ(read_layer_size, layers[0]);
+
+        const size_t connection_count = read_layers_count - 1;
+        for (size_t i = 0; i < connection_count; ++i) {
+            const dr_matrix connection = nn.connections[i];
+            size_t read_width  = 0;
+            size_t read_height = 0;
+            fscanf(file, "%zu %zu", &read_width, &read_height);
+            EXPECT_EQ(read_width, connection.width);
+            EXPECT_EQ(read_height, connection.height);
+            for (size_t row = 0; row < read_height; ++row) {
+                for (size_t column = 0; column < read_width; ++column) {
+                    const float val = dr_matrix_unchecked_get_element(connection, column, row);
+                    float read_val = 0;
+                    fscanf(file, "%f", &read_val);
+                    EXPECT_NEAR(read_val, val, 0.001);
+                }
+            }
+            fscanf(file, "%zu", &read_layer_size);
+            EXPECT_EQ(read_layer_size, nn.layers[i + 1].height);
+            char* expected_func_name   = dr_default_activation_function_to_string(nn.activation_functions[i]);
+            char* expected_func_d_name =
+                dr_default_activation_function_derivative_to_string(nn.activation_functions_derivatives[i]);
+            fscanf(file, "%s", buffer);
+            EXPECT_EQ(strcmp(buffer, expected_func_name), 0);
+            fscanf(file, "%s", buffer);
+            EXPECT_EQ(strcmp(buffer, expected_func_d_name), 0);
+            DR_FREE(expected_func_name);
+            DR_FREE(expected_func_d_name);
+        }
+        fscanf(file, "%s", buffer);
+        EXPECT_EQ(strcmp(buffer, "DR_NEURAL_NETWORK_END"), 0);
+
+        fclose(file);
+        dr_neural_network_free(&nn);
+    }
 }

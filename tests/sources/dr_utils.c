@@ -72,3 +72,19 @@ UTEST(dr_utils, dr_array_2d_float_alloc) {
 
     dr_array_2d_float_free(array, height);
 }
+
+UTEST(dr_utils, dr_str_alloc) {
+    {
+        const char* expected_str = "A";
+        char* str = dr_str_alloc(expected_str);
+        EXPECT_EQ(strcmp(str, expected_str), 0);
+        DR_FREE(str);
+    }
+
+    {
+        const char* expected_str = "TEST_STRING";
+        char* str = dr_str_alloc(expected_str);
+        EXPECT_EQ(strcmp(str, expected_str), 0);
+        DR_FREE(str);
+    }
+}

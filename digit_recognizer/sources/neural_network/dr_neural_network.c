@@ -1,5 +1,81 @@
-#include <string.h>
 #include <neural_network/dr_neural_network.h>
+
+DR_FLOAT_TYPE dr_sigmoid(const DR_FLOAT_TYPE value) {
+    return 1.0 / (1.0 + exp(-value));
+}
+
+DR_FLOAT_TYPE dr_sigmoid_derivative(const DR_FLOAT_TYPE value) {
+    return value * (1.0 - value);
+}
+
+DR_FLOAT_TYPE dr_tanh(const DR_FLOAT_TYPE value) {
+    return tanh(value);
+}
+
+DR_FLOAT_TYPE dr_tanh_derivative(const DR_FLOAT_TYPE value) {
+    return 1.0 - pow(value, 2);
+}
+
+DR_FLOAT_TYPE dr_relu(const DR_FLOAT_TYPE value) {
+    return value < 0.0 ? 0 : value;
+}
+
+DR_FLOAT_TYPE dr_relu_derivative(const DR_FLOAT_TYPE value) {
+    return value > 0;
+}
+
+char* dr_default_activation_function_to_string(const dr_activation_function activation_function) {
+    DR_ASSERT_MSG(activation_function, "attempt to convert a NULL activation function to the string");
+    if (activation_function == &dr_sigmoid) {
+        return dr_str_alloc(DR_SIGMOID_STR);
+    } else if (activation_function == &dr_tanh) {
+        return dr_str_alloc(DR_TANH_STR);
+    } else if (activation_function == &dr_relu) {
+        return dr_str_alloc(DR_RELU_STR);
+    } else {
+        return NULL;
+    }
+}
+
+dr_activation_function dr_default_activation_function_from_string(const char* string) {
+    DR_ASSERT_MSG(string, "attempt to convert a NULL string to the activation function");
+    if (strcmp(string, DR_SIGMOID_STR) == 0) {
+        return &dr_sigmoid;
+    } else if (strcmp(string, DR_TANH_STR) == 0) {
+        return &dr_tanh;
+    } else if (strcmp(string, DR_RELU_STR) == 0) {
+        return &dr_relu;
+    } else {
+        return NULL;
+    }
+}
+
+char* dr_default_activation_function_derivative_to_string(const dr_activation_function activation_function_derivative) {
+    DR_ASSERT_MSG(activation_function_derivative,
+        "attempt to convert a NULL activation function derivative to the string");
+    if (activation_function_derivative == &dr_sigmoid_derivative) {
+        return dr_str_alloc(DR_SIGMOID_DERIVATIVE_STR);
+    } else if (activation_function_derivative == &dr_tanh_derivative) {
+        return dr_str_alloc(DR_TANH_DERIVATIVE_STR);
+    } else if (activation_function_derivative == &dr_relu_derivative) {
+        return dr_str_alloc(DR_RELU_DERIVATIVE_STR);
+    } else {
+        return NULL;
+    }
+}
+
+dr_activation_function dr_default_activation_function_derivative_from_string(const char* string) {
+    DR_ASSERT_MSG(string, "attempt to convert a NULL string to the activation function derivative");
+    if (strcmp(string, DR_SIGMOID_DERIVATIVE_STR) == 0) {
+        return &dr_sigmoid_derivative;
+    } else if (strcmp(string, DR_TANH_DERIVATIVE_STR) == 0) {
+        return &dr_tanh_derivative;
+    } else if (strcmp(string, DR_RELU_DERIVATIVE_STR) == 0) {
+        return &dr_relu_derivative;
+    } else {
+        return NULL;
+    }
+}
 
 bool dr_neural_network_valid(const dr_neural_network neural_network) {
     return (neural_network.layers_count >= 2) &&
@@ -310,7 +386,69 @@ dr_matrix dr_neural_network_prediction_create(const dr_neural_network neural_net
     return dr_neural_network_unchecked_prediction_create(neural_network, input);
 }
 
+bool dr_neural_network_save_to_file_custom_activation_function_transformer(const dr_neural_network neural_network,
+    const dr_activation_function_to_string_callback activation_function_to_string_callback,
+    const dr_activation_function_to_string_callback activation_function_derivative_to_string_callback,
+    const char* file_path) {
+    DR_ASSERT_MSG(dr_neural_network_valid(neural_network), "attempt to save the not valid neural network to the file");
+    DR_ASSERT_MSG(activation_function_to_string_callback,
+        "can't save the neural network to a file: activation_function_to_string_callback was NULL");
+    DR_ASSERT_MSG(activation_function_derivative_to_string_callback,
+        "can't save the neural network to a file: activation_function_derivative_to_string_callback was NULL");
+    DR_ASSERT_MSG(file_path, "attempt to save the neural netowrk with NULL file_path");
+
+    FILE* file = fopen(file_path, "w");
+    if (!file) {
+        return false;
+    }
+
+    fprintf(file, "%s\n", "DR_NEURAL_NETWORK_BEGIN");
+    fprintf(file, "%zu\n", neural_network.layers_count);
+    fprintf(file, "%zu\n", neural_network.layers[0].height);
+
+    for (size_t i = 0; i < neural_network.connections_count; ++i) {
+        const dr_matrix connection = neural_network.connections[i];
+
+        fprintf(file, "%zu %zu\n", connection.width, connection.height);
+
+        for (size_t row = 0; row < connection.height; ++row) {
+            for (size_t column = 0; column < connection.width; ++column) {
+                fprintf(file, "%f ", dr_matrix_unchecked_get_element(connection, column, row));
+            }
+            fprintf(file, "\n");
+        }
+
+        fprintf(file, "%zu\n", neural_network.layers[i + 1].height);
+
+        char* activation_function_str = activation_function_to_string_callback(neural_network.activation_functions[i]);
+        if (!activation_function_str) {
+            return false;
+        }
+        fprintf(file, "%s\n", activation_function_str);
+        DR_FREE(activation_function_str);
+
+        char* activation_function_derivative_str =
+            activation_function_derivative_to_string_callback(neural_network.activation_functions_derivatives[i]);
+        if (!activation_function_derivative_str) {
+            return false;
+        }
+        fprintf(file, "%s\n", activation_function_derivative_str);
+        DR_FREE(activation_function_derivative_str);
+    }
+
+    fprintf(file, "%s", "DR_NEURAL_NETWORK_END");
+    fclose(file);
+    return true;
+}
+
+bool dr_neural_network_save_to_file(const dr_neural_network neural_network, const char* file_path) {
+    return dr_neural_network_save_to_file_custom_activation_function_transformer(neural_network,
+        &dr_default_activation_function_to_string, &dr_default_activation_function_derivative_to_string, file_path);
+}
+
 void dr_neural_network_print(const dr_neural_network neural_network) {
+    DR_ASSERT_MSG(dr_neural_network_valid(neural_network), "attempt to print the not valid neural netowrk");
+
     const char layer_str[]          = "layer";
     const char connection_str[]     = "connection";
     const size_t layer_str_len      = DR_ARRAY_LENGTH(layer_str);
