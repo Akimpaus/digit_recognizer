@@ -17,6 +17,9 @@ typedef struct {
     dr_activation_function* activation_functions_derivatives;
 } dr_neural_network;
 
+static const char DR_NEURAL_NETWORK_BEGIN_STR[] = "DR_NEURAL_NETWORK_BEGIN";
+static const char DR_NEURAL_NETWORK_END_STR[]   = "DR_NEURAL_NETWORK_END";
+
 static const char DR_SIGMOID_STR[] = "DR_SIGMOID";
 DR_FLOAT_TYPE dr_sigmoid(const DR_FLOAT_TYPE value);
 
@@ -49,6 +52,10 @@ dr_neural_network dr_neural_network_create(
     const size_t* layers_sizes, const size_t layers_count,
     const dr_activation_function* activation_functions,
     const dr_activation_function* activation_functions_derivatives);
+
+dr_neural_network dr_neural_network_unchecked_copy_create(const dr_neural_network neural_network);
+
+dr_neural_network dr_neural_network_copy_create(const dr_neural_network neural_network);
 
 void dr_neural_network_free(dr_neural_network* neural_network);
 
@@ -110,12 +117,12 @@ bool dr_neural_network_save_to_file_custom_activation_function_transformer(const
 
 bool dr_neural_network_save_to_file(const dr_neural_network neural_network, const char* file_path);
 
-// dr_neural_network dr_neural_network_load_from_file_custom_activation_function_transformer(
-//     const dr_activation_function_to_string_callback activation_function_to_string_callback,
-//     const dr_activation_function_to_string_callback activation_function_derivative_to_string_callback,
-//     const char* file_path); // test
+dr_neural_network dr_neural_network_load_from_file_custom_activation_function_transformer(
+    const dr_activation_function_from_string_callback activation_function_from_string_callback,
+    const dr_activation_function_from_string_callback activation_function_derivative_from_string_callback,
+    const char* file_path);
 
-// dr_neural_network dr_neural_network_load_from_file(const char* file_path); // test
+dr_neural_network dr_neural_network_load_from_file(const char* file_path); // test
 
 void dr_neural_network_print(const dr_neural_network neural_network);
 

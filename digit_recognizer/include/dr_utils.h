@@ -1,6 +1,10 @@
 #ifndef DR_UTILS_H
 #define DR_UTILS_H
 
+// TODO: add checks (where it's no) on DR_MALLOC. after it assert on not NULL.
+// TODO: equals for neural network oly in testing part.
+// TODO: we cant make creation of neural network faster if we will use only one cycle.
+
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>

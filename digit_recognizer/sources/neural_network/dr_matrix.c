@@ -1,4 +1,5 @@
 #include <neural_network/dr_matrix.h>
+#include <math.h>
 
 bool dr_matrix_correct_sizes(const size_t width, const size_t height) {
     return (width > 0 && height > 0) || (width == 0 && height == 0);
@@ -366,36 +367,36 @@ dr_matrix dr_matrix_transpose_create(const dr_matrix matrix) {
     return dr_matrix_unchecked_transpose_create(matrix);
 }
 
-bool dr_matrix_unchecked_equals_to_array(
-    const dr_matrix matrix, const DR_FLOAT_TYPE* array, const size_t width, const size_t height) {
+bool dr_matrix_unchecked_equals_to_array(const dr_matrix matrix,
+    const DR_FLOAT_TYPE* array, const size_t width, const size_t height, const DR_FLOAT_TYPE epsilon) {
     if (matrix.width != width || matrix.height != height) {
         return false;
     }
     const size_t size = width * height;
     for (size_t i = 0; i < size; ++i) {
-        if (matrix.elements[i] != array[i]) {
+        if (fabsl((long double)(matrix.elements[i] - array[i])) > epsilon) {
             return false;
         }
     }
     return true;
 }
 
-bool dr_matrix_equals_to_array(
-    const dr_matrix matrix, const DR_FLOAT_TYPE* array, const size_t width, const size_t height) {
+bool dr_matrix_equals_to_array(const dr_matrix matrix,
+    const DR_FLOAT_TYPE* array, const size_t width, const size_t height, const DR_FLOAT_TYPE epsilon) {
     DR_ASSERT_MSG(array && width * height > 0, "comparison of a matrix with an array is possible only if "
         "the array is not NULL and its size is specified as positive.");
     dr_matrix_assert_compat_elements_and_sizes(matrix);
-    return dr_matrix_unchecked_equals_to_array(matrix, array, width, height);
+    return dr_matrix_unchecked_equals_to_array(matrix, array, width, height, epsilon);
 }
 
-bool dr_matrix_unchecked_equals(const dr_matrix left, const dr_matrix right) {
-    return dr_matrix_unchecked_equals_to_array(left, right.elements, right.width, right.height);
+bool dr_matrix_unchecked_equals(const dr_matrix left, const dr_matrix right, const DR_FLOAT_TYPE epsilon) {
+    return dr_matrix_unchecked_equals_to_array(left, right.elements, right.width, right.height, epsilon);
 }
 
-bool dr_matrix_equals(const dr_matrix left, const dr_matrix right) {
+bool dr_matrix_equals(const dr_matrix left, const dr_matrix right, const DR_FLOAT_TYPE epsilon) {
     dr_matrix_assert_compat_elements_and_sizes(left);
     dr_matrix_assert_compat_elements_and_sizes(right);
-    return dr_matrix_unchecked_equals(left, right);
+    return dr_matrix_unchecked_equals(left, right, epsilon);
 }
 
 void dr_matrix_print_space(

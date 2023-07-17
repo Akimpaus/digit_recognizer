@@ -114,15 +114,15 @@ dr_matrix dr_matrix_unchecked_transpose_create(const dr_matrix matrix);
 
 dr_matrix dr_matrix_transpose_create(const dr_matrix matrix);
 
-bool dr_matrix_unchecked_equals(const dr_matrix left, const dr_matrix right);
+bool dr_matrix_unchecked_equals_to_array(const dr_matrix matrix,
+    const DR_FLOAT_TYPE* array, const size_t width, const size_t height, const DR_FLOAT_TYPE epsilon);
 
-bool dr_matrix_unchecked_equals_to_array(
-    const dr_matrix matrix, const DR_FLOAT_TYPE* array, const size_t width, const size_t height);
+bool dr_matrix_equals_to_array(const dr_matrix matrix,
+    const DR_FLOAT_TYPE* array, const size_t width, const size_t height, const DR_FLOAT_TYPE epsilon);
 
-bool dr_matrix_equals_to_array(
-    const dr_matrix matrix, const DR_FLOAT_TYPE* array, const size_t width, const size_t height);
+bool dr_matrix_unchecked_equals(const dr_matrix left, const dr_matrix right, const DR_FLOAT_TYPE epsilon);
 
-bool dr_matrix_equals(const dr_matrix left, const dr_matrix right);
+bool dr_matrix_equals(const dr_matrix left, const dr_matrix right, const DR_FLOAT_TYPE epsilon);
 
 void dr_matrix_print_space(
     const dr_matrix matrix, const size_t space_open, const size_t space_data, const size_t space_close);

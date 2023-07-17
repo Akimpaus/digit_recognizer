@@ -40,4 +40,30 @@ static DR_FLOAT_TYPE dr_testing_neural_network_func_triple(const DR_FLOAT_TYPE v
     return val * 3;
 }
 
+bool dr_testing_neural_network_equals(
+    const dr_neural_network left, const dr_neural_network right, const DR_FLOAT_TYPE epsilon) {
+    DR_ASSERT_MSG(dr_neural_network_valid(left) && dr_neural_network_valid(right),
+        "attempt to compat a not valid neural network");
+
+    if (left.layers_count != right.layers_count || left.connections_count != right.connections_count) {
+        return false;
+    }
+
+    if (!dr_matrix_unchecked_equals(left.layers[0], right.layers[0], epsilon)) {
+        return false;
+    }
+
+    for (size_t i = 0; i < left.connections_count; ++i) {
+        const size_t layer_index = i + 1;
+        if (left.activation_functions[i] != right.activation_functions[i] ||
+            left.activation_functions_derivatives[i] != right.activation_functions_derivatives[i] ||
+            !dr_matrix_unchecked_equals(left.connections[i], right.connections[i], epsilon) ||
+            !dr_matrix_unchecked_equals(left.layers[layer_index], right.layers[layer_index], epsilon)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 #endif // DR_TESTING_NEURAL_NETWORK_H

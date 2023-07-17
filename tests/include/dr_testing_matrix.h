@@ -4,6 +4,8 @@
 #include <utest.h>
 #include <neural_network/dr_matrix.h>
 
+#define DR_TESTING_MATRIX_EQUALS_EPSILON 0.001
+
 static bool dr_testing_matrix_filled(const dr_matrix matrix, const DR_FLOAT_TYPE val) {
     const size_t size = matrix.width * matrix.height;
     for (size_t i = 0; i < size; ++i) {

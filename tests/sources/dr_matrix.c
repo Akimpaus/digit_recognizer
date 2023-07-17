@@ -257,7 +257,7 @@ UTEST(dr_matrix, copy_array) {
         };
         dr_matrix matrix = dr_matrix_create_filled(width, height, 0);
         dr_matrix_copy_array(matrix, arr);
-        EXPECT_TRUE(dr_matrix_equals_to_array(matrix, arr, width, height));
+        EXPECT_TRUE(dr_matrix_equals_to_array(matrix, arr, width, height, DR_TESTING_MATRIX_EQUALS_EPSILON));
         EXPECT_TRUE(matrix.elements);
         EXPECT_EQ(matrix.width, width);
         EXPECT_EQ(matrix.height, height);
@@ -274,7 +274,7 @@ UTEST(dr_matrix, copy_array) {
         };
         dr_matrix matrix = dr_matrix_create_filled(width, height, 0);
         dr_matrix_copy_array(matrix, arr);
-        EXPECT_TRUE(dr_matrix_equals_to_array(matrix, arr, width, height));
+        EXPECT_TRUE(dr_matrix_equals_to_array(matrix, arr, width, height, DR_TESTING_MATRIX_EQUALS_EPSILON));
         EXPECT_TRUE(matrix.elements);
         EXPECT_EQ(matrix.width, width);
         EXPECT_EQ(matrix.height, height);
@@ -291,7 +291,7 @@ UTEST(dr_matrix, copy_array) {
         };
         dr_matrix matrix = dr_matrix_create_filled(width, height, 0);
         dr_matrix_copy_array(matrix, arr);
-        EXPECT_TRUE(dr_matrix_equals_to_array(matrix, arr, width, height));
+        EXPECT_TRUE(dr_matrix_equals_to_array(matrix, arr, width, height, DR_TESTING_MATRIX_EQUALS_EPSILON));
         EXPECT_TRUE(matrix.elements);
         EXPECT_EQ(matrix.width, width);
         EXPECT_EQ(matrix.height, height);
@@ -310,7 +310,7 @@ UTEST(dr_matrix, copy_array) {
         };
         dr_matrix matrix = dr_matrix_create_filled(width, height, 0);
         dr_matrix_copy_array(matrix, arr);
-        EXPECT_TRUE(dr_matrix_equals_to_array(matrix, arr, width, height));
+        EXPECT_TRUE(dr_matrix_equals_to_array(matrix, arr, width, height, DR_TESTING_MATRIX_EQUALS_EPSILON));
         EXPECT_TRUE(matrix.elements);
         EXPECT_EQ(matrix.width, width);
         EXPECT_EQ(matrix.height, height);
@@ -388,7 +388,7 @@ UTEST(dr_matrix, create_from_array) {
             1
         };
         dr_matrix matrix = dr_matrix_create_from_array(array, 1, 1);
-        EXPECT_TRUE(dr_matrix_equals_to_array(matrix, array, 1, 1));
+        EXPECT_TRUE(dr_matrix_equals_to_array(matrix, array, 1, 1, DR_TESTING_MATRIX_EQUALS_EPSILON));
         dr_matrix_free(&matrix);
     }
 
@@ -399,7 +399,7 @@ UTEST(dr_matrix, create_from_array) {
             7, 8, 9
         };
         dr_matrix matrix = dr_matrix_create_from_array(array, 3, 3);
-        EXPECT_TRUE(dr_matrix_equals_to_array(matrix, array, 3, 3));
+        EXPECT_TRUE(dr_matrix_equals_to_array(matrix, array, 3, 3, DR_TESTING_MATRIX_EQUALS_EPSILON));
         dr_matrix_free(&matrix);
     }
 }
@@ -469,7 +469,7 @@ UTEST(dr_matrix, multiplication_write) {
         dr_matrix result          = dr_matrix_alloc(right.width, left.height);
 
         dr_matrix_multiplication_write(left, right, result);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -499,7 +499,7 @@ UTEST(dr_matrix, multiplication_write) {
         dr_matrix result          = dr_matrix_alloc(right.width, left.height);
 
         dr_matrix_multiplication_write(left, right, result);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -532,7 +532,7 @@ UTEST(dr_matrix, multiplication_write) {
         dr_matrix result          = dr_matrix_alloc(right.width, left.height);
 
         dr_matrix_multiplication_write(left, right, result);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -560,7 +560,7 @@ UTEST(dr_matrix, multiplication_create) {
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 1);
         dr_matrix result          = dr_matrix_multiplication_create(left, right);
 
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -589,7 +589,7 @@ UTEST(dr_matrix, multiplication_create) {
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 2);
         dr_matrix result          = dr_matrix_multiplication_create(left, right);
 
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -621,7 +621,7 @@ UTEST(dr_matrix, multiplication_create) {
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 3);
         dr_matrix result          = dr_matrix_multiplication_create(left, right);
 
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -650,7 +650,7 @@ UTEST(dr_matrix, dot_write) {
         dr_matrix result          = dr_matrix_alloc(right.width, left.height);
 
         dr_matrix_dot_write(left, right, result);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -680,7 +680,7 @@ UTEST(dr_matrix, dot_write) {
         dr_matrix result          = dr_matrix_alloc(right.width, left.height);
 
         dr_matrix_dot_write(left, right, result);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -710,7 +710,7 @@ UTEST(dr_matrix, dot_write) {
         dr_matrix result          = dr_matrix_alloc(right.width, left.height);
 
         dr_matrix_dot_write(left, right, result);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -738,7 +738,7 @@ UTEST(dr_matrix, dot_create) {
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 1);
         dr_matrix result          = dr_matrix_dot_create(left, right);
 
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -767,7 +767,7 @@ UTEST(dr_matrix, dot_create) {
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 2);
         dr_matrix result          = dr_matrix_dot_create(left, right);
 
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -796,7 +796,7 @@ UTEST(dr_matrix, dot_create) {
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 2);
         dr_matrix result          = dr_matrix_dot_create(left, right);
 
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -820,7 +820,7 @@ UTEST(dr_matrix, scale_write) {
         dr_matrix result          = dr_matrix_alloc(matrix.width, matrix.height);
 
         dr_matrix_scale_write(matrix, 2, result);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&matrix);
         dr_matrix_free(&expected_result);
@@ -843,7 +843,7 @@ UTEST(dr_matrix, scale_write) {
         dr_matrix result          = dr_matrix_alloc(matrix.width, matrix.height);
 
         dr_matrix_scale_write(matrix, 3, result);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&matrix);
         dr_matrix_free(&expected_result);
@@ -868,7 +868,7 @@ UTEST(dr_matrix, scale_write) {
         dr_matrix result          = dr_matrix_alloc(matrix.width, matrix.height);
 
         dr_matrix_scale_write(matrix, 4, result);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&matrix);
         dr_matrix_free(&expected_result);
@@ -890,7 +890,7 @@ UTEST(dr_matrix, scale_create) {
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 1);
         dr_matrix result          = dr_matrix_scale_create(matrix, 2);
 
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&matrix);
         dr_matrix_free(&expected_result);
@@ -912,7 +912,7 @@ UTEST(dr_matrix, scale_create) {
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 2);
         dr_matrix result          = dr_matrix_scale_create(matrix, 3);
 
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&matrix);
         dr_matrix_free(&expected_result);
@@ -936,7 +936,7 @@ UTEST(dr_matrix, scale_create) {
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 3);
         dr_matrix result          = dr_matrix_scale_create(matrix, 4);
 
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&matrix);
         dr_matrix_free(&expected_result);
@@ -964,7 +964,7 @@ UTEST(dr_matrix, subtraction_write) {
         dr_matrix result          = dr_matrix_alloc(right.width, left.height);
 
         dr_matrix_subtraction_write(left, right, result);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -994,7 +994,7 @@ UTEST(dr_matrix, subtraction_write) {
         dr_matrix result          = dr_matrix_alloc(right.width, left.height);
 
         dr_matrix_subtraction_write(left, right, result);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -1027,7 +1027,7 @@ UTEST(dr_matrix, subtraction_write) {
         dr_matrix result          = dr_matrix_alloc(right.width, left.height);
 
         dr_matrix_subtraction_write(left, right, result);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -1055,7 +1055,7 @@ UTEST(dr_matrix, subtraction_create) {
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 1);
         dr_matrix result          = dr_matrix_subtraction_create(left, right);
 
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -1084,7 +1084,7 @@ UTEST(dr_matrix, subtraction_create) {
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 2);
         dr_matrix result          = dr_matrix_subtraction_create(left, right);
 
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -1116,7 +1116,7 @@ UTEST(dr_matrix, subtraction_create) {
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 3);
         dr_matrix result          = dr_matrix_subtraction_create(left, right);
 
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -1145,7 +1145,7 @@ UTEST(dr_matrix, addition_write) {
         dr_matrix result          = dr_matrix_alloc(right.width, left.height);
 
         dr_matrix_addition_write(left, right, result);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -1175,7 +1175,7 @@ UTEST(dr_matrix, addition_write) {
         dr_matrix result          = dr_matrix_alloc(right.width, left.height);
 
         dr_matrix_addition_write(left, right, result);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -1208,7 +1208,7 @@ UTEST(dr_matrix, addition_write) {
         dr_matrix result          = dr_matrix_alloc(right.width, left.height);
 
         dr_matrix_addition_write(left, right, result);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -1236,7 +1236,7 @@ UTEST(dr_matrix, addition_create) {
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 1);
         dr_matrix result          = dr_matrix_addition_create(left, right);
 
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -1265,7 +1265,7 @@ UTEST(dr_matrix, addition_create) {
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 2);
         dr_matrix result          = dr_matrix_addition_create(left, right);
 
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -1297,7 +1297,7 @@ UTEST(dr_matrix, addition_create) {
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 3);
         dr_matrix result          = dr_matrix_addition_create(left, right);
 
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -1321,7 +1321,7 @@ UTEST(dr_matrix, transpose_write) {
         dr_matrix result          = dr_matrix_alloc(matrix.height, matrix.width);
 
         dr_matrix_transpose_write(matrix, result);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&matrix);
         dr_matrix_free(&expected_result);
@@ -1344,7 +1344,7 @@ UTEST(dr_matrix, transpose_write) {
         dr_matrix result          = dr_matrix_alloc(matrix.height, matrix.width);
 
         dr_matrix_transpose_write(matrix, result);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&matrix);
         dr_matrix_free(&expected_result);
@@ -1368,7 +1368,7 @@ UTEST(dr_matrix, transpose_write) {
         dr_matrix result          = dr_matrix_alloc(matrix.height, matrix.width);
 
         dr_matrix_transpose_write(matrix, result);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&matrix);
         dr_matrix_free(&expected_result);
@@ -1389,7 +1389,7 @@ UTEST(dr_matrix, transpose_create) {
         dr_matrix matrix          = dr_matrix_create_from_array(matrix_arr, 1, 1);
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 1, 1);
         dr_matrix result          = dr_matrix_transpose_create(matrix);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&matrix);
         dr_matrix_free(&expected_result);
@@ -1410,7 +1410,7 @@ UTEST(dr_matrix, transpose_create) {
         dr_matrix matrix          = dr_matrix_create_from_array(matrix_arr, 2, 2);
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 2);
         dr_matrix result          = dr_matrix_transpose_create(matrix);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&matrix);
         dr_matrix_free(&expected_result);
@@ -1432,7 +1432,7 @@ UTEST(dr_matrix, transpose_create) {
         dr_matrix matrix          = dr_matrix_create_from_array(matrix_arr, 3, 2);
         dr_matrix expected_result = dr_matrix_create_from_array(expected_result_arr, 2, 3);
         dr_matrix result          = dr_matrix_transpose_create(matrix);
-        EXPECT_TRUE(dr_matrix_equals(result, expected_result));
+        EXPECT_TRUE(dr_matrix_equals(result, expected_result, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&matrix);
         dr_matrix_free(&expected_result);
@@ -1450,7 +1450,7 @@ UTEST(dr_matrix, copy_write) {
         dr_matrix result = dr_matrix_create_filled(1, 1, 0);
         dr_matrix_copy_write(src, result);
 
-        EXPECT_TRUE(dr_matrix_equals(result, src));
+        EXPECT_TRUE(dr_matrix_equals(result, src, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&src);
         dr_matrix_free(&result);
@@ -1466,7 +1466,7 @@ UTEST(dr_matrix, copy_write) {
         dr_matrix result = dr_matrix_create_filled(2, 2, 0);
         dr_matrix_copy_write(src, result);
 
-        EXPECT_TRUE(dr_matrix_equals(result, src));
+        EXPECT_TRUE(dr_matrix_equals(result, src, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&src);
         dr_matrix_free(&result);
@@ -1483,7 +1483,7 @@ UTEST(dr_matrix, copy_write) {
         dr_matrix result = dr_matrix_create_filled(2, 3, 0);
         dr_matrix_copy_write(src, result);
 
-        EXPECT_TRUE(dr_matrix_equals(result, src));
+        EXPECT_TRUE(dr_matrix_equals(result, src, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&src);
         dr_matrix_free(&result);
@@ -1499,7 +1499,7 @@ UTEST(dr_matrix, copy_create) {
         dr_matrix src    = dr_matrix_create_from_array(src_arr, 1, 1);
         dr_matrix result = dr_matrix_copy_create(src);
 
-        EXPECT_TRUE(dr_matrix_equals(result, src));
+        EXPECT_TRUE(dr_matrix_equals(result, src, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&src);
         dr_matrix_free(&result);
@@ -1514,7 +1514,7 @@ UTEST(dr_matrix, copy_create) {
         dr_matrix src    = dr_matrix_create_from_array(src_arr, 2, 2);
         dr_matrix result = dr_matrix_copy_create(src);
 
-        EXPECT_TRUE(dr_matrix_equals(result, src));
+        EXPECT_TRUE(dr_matrix_equals(result, src, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&src);
         dr_matrix_free(&result);
@@ -1530,7 +1530,7 @@ UTEST(dr_matrix, copy_create) {
         dr_matrix src    = dr_matrix_create_from_array(src_arr, 2, 3);
         dr_matrix result = dr_matrix_copy_create(src);
 
-        EXPECT_TRUE(dr_matrix_equals(result, src));
+        EXPECT_TRUE(dr_matrix_equals(result, src, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&src);
         dr_matrix_free(&result);
@@ -1547,7 +1547,7 @@ UTEST(dr_matrix, equals_to_array) {
             1
         };
 
-        EXPECT_TRUE(dr_matrix_equals_to_array(left_mat, right_arr, 1, 1));
+        EXPECT_TRUE(dr_matrix_equals_to_array(left_mat, right_arr, 1, 1, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left_mat);
     }
@@ -1562,7 +1562,7 @@ UTEST(dr_matrix, equals_to_array) {
             1
         };
 
-        EXPECT_FALSE(dr_matrix_equals_to_array(left_mat, right_arr, 1, 1));
+        EXPECT_FALSE(dr_matrix_equals_to_array(left_mat, right_arr, 1, 1, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left_mat);
     }
@@ -1577,7 +1577,7 @@ UTEST(dr_matrix, equals_to_array) {
             3, 4
         };
 
-        EXPECT_FALSE(dr_matrix_equals_to_array(left_mat, right_arr, 2, 2));
+        EXPECT_FALSE(dr_matrix_equals_to_array(left_mat, right_arr, 2, 2, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left_mat);
     }
@@ -1593,7 +1593,7 @@ UTEST(dr_matrix, equals_to_array) {
             3, 4
         };
 
-        EXPECT_TRUE(dr_matrix_equals_to_array(left_mat, right_arr, 2, 2));
+        EXPECT_TRUE(dr_matrix_equals_to_array(left_mat, right_arr, 2, 2, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left_mat);
     }
@@ -1609,7 +1609,7 @@ UTEST(dr_matrix, equals_to_array) {
             3, 4
         };
 
-        EXPECT_FALSE(dr_matrix_equals_to_array(left_mat, right_arr, 2, 2));
+        EXPECT_FALSE(dr_matrix_equals_to_array(left_mat, right_arr, 2, 2, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left_mat);
     }
@@ -1620,14 +1620,14 @@ UTEST(dr_matrix, equals) {
         dr_matrix left  = dr_matrix_create_empty();
         dr_matrix right = dr_matrix_create_empty();
 
-        EXPECT_TRUE(dr_matrix_equals(left, right));
+        EXPECT_TRUE(dr_matrix_equals(left, right, DR_TESTING_MATRIX_EQUALS_EPSILON));
     }
 
     {
         dr_matrix left  = dr_matrix_create_empty();
         dr_matrix right = dr_matrix_create_filled(1, 2, 0);
 
-        EXPECT_FALSE(dr_matrix_equals(left, right));
+        EXPECT_FALSE(dr_matrix_equals(left, right, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&right);
     }
@@ -1636,7 +1636,7 @@ UTEST(dr_matrix, equals) {
         dr_matrix left  = dr_matrix_create_filled(3, 2, 0);
         dr_matrix right = dr_matrix_create_filled(2, 2, 0);
 
-        EXPECT_FALSE(dr_matrix_equals(left, right));
+        EXPECT_FALSE(dr_matrix_equals(left, right, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -1658,7 +1658,7 @@ UTEST(dr_matrix, equals) {
         dr_matrix left  = dr_matrix_create_from_array(left_arr, 3, 3);
         dr_matrix right = dr_matrix_create_from_array(right_arr, 3, 3);
 
-        EXPECT_TRUE(dr_matrix_equals(left, right));
+        EXPECT_TRUE(dr_matrix_equals(left, right, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);
@@ -1680,7 +1680,7 @@ UTEST(dr_matrix, equals) {
         dr_matrix left  = dr_matrix_create_from_array(left_arr, 3, 3);
         dr_matrix right = dr_matrix_create_from_array(right_arr, 3, 3);
 
-        EXPECT_FALSE(dr_matrix_equals(left, right));
+        EXPECT_FALSE(dr_matrix_equals(left, right, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_matrix_free(&left);
         dr_matrix_free(&right);

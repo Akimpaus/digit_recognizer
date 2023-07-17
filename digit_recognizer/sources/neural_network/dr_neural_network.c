@@ -123,6 +123,44 @@ dr_neural_network dr_neural_network_create(
     return nn;
 }
 
+dr_neural_network dr_neural_network_unchecked_copy_create(const dr_neural_network neural_network) {
+    dr_neural_network new_neural_network;
+    new_neural_network.layers_count      = neural_network.layers_count;
+    new_neural_network.connections_count = neural_network.connections_count;
+
+    new_neural_network.activation_functions =
+        (dr_activation_function*)DR_MALLOC(sizeof(dr_activation_function) * new_neural_network.connections_count);
+    DR_ASSERT_MSG(new_neural_network.activation_functions, "alloc neural network activation functions error");
+
+    new_neural_network.activation_functions_derivatives =
+        (dr_activation_function*)DR_MALLOC(sizeof(dr_activation_function) * new_neural_network.connections_count);
+    DR_ASSERT_MSG(new_neural_network.activation_functions_derivatives,
+        "alloc neural network activation functions derivatives error");
+
+    new_neural_network.connections = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * new_neural_network.connections_count);
+    DR_ASSERT_MSG(new_neural_network.connections, "alloc neural network connections error");
+
+    new_neural_network.layers = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * new_neural_network.layers_count);
+    DR_ASSERT_MSG(new_neural_network.layers, "alloc neural network layers error");
+
+    new_neural_network.layers[0] = dr_matrix_unchecked_copy_create(neural_network.layers[0]);
+
+    for (size_t i = 0; i < new_neural_network.connections_count; ++i) {
+        const size_t layer_index = i + 1;
+        new_neural_network.connections[i] = dr_matrix_unchecked_copy_create(neural_network.connections[i]);
+        new_neural_network.activation_functions[i]             = neural_network.activation_functions[i];
+        new_neural_network.activation_functions_derivatives[i] = neural_network.activation_functions_derivatives[i];
+        new_neural_network.layers[layer_index] = dr_matrix_unchecked_copy_create(neural_network.layers[layer_index]);
+    }
+
+    return new_neural_network;
+}
+
+dr_neural_network dr_neural_network_copy_create(const dr_neural_network neural_network) {
+    DR_ASSERT_MSG(dr_neural_network_valid(neural_network), "attempt to create a copy of a not valid neural network");
+    return dr_neural_network_unchecked_copy_create(neural_network);
+}
+
 void dr_neural_network_free(dr_neural_network* neural_network) {
     DR_FREE(neural_network->activation_functions);
     neural_network->activation_functions = NULL;
@@ -402,7 +440,7 @@ bool dr_neural_network_save_to_file_custom_activation_function_transformer(const
         return false;
     }
 
-    fprintf(file, "%s\n", "DR_NEURAL_NETWORK_BEGIN");
+    fprintf(file, "%s\n", DR_NEURAL_NETWORK_BEGIN_STR);
     fprintf(file, "%zu\n", neural_network.layers_count);
     fprintf(file, "%zu\n", neural_network.layers[0].height);
 
@@ -436,7 +474,7 @@ bool dr_neural_network_save_to_file_custom_activation_function_transformer(const
         DR_FREE(activation_function_derivative_str);
     }
 
-    fprintf(file, "%s", "DR_NEURAL_NETWORK_END");
+    fprintf(file, "%s", DR_NEURAL_NETWORK_END_STR);
     fclose(file);
     return true;
 }
@@ -444,6 +482,92 @@ bool dr_neural_network_save_to_file_custom_activation_function_transformer(const
 bool dr_neural_network_save_to_file(const dr_neural_network neural_network, const char* file_path) {
     return dr_neural_network_save_to_file_custom_activation_function_transformer(neural_network,
         &dr_default_activation_function_to_string, &dr_default_activation_function_derivative_to_string, file_path);
+}
+
+dr_neural_network dr_neural_network_load_from_file_custom_activation_function_transformer(
+    const dr_activation_function_from_string_callback activation_function_from_string_callback,
+    const dr_activation_function_from_string_callback activation_function_derivative_from_string_callback,
+    const char* file_path) {
+    DR_ASSERT_MSG(activation_function_from_string_callback,
+        "can't save the neural network to a file: activation_function_from_string_callback was NULL");
+    DR_ASSERT_MSG(activation_function_derivative_from_string_callback,
+        "can't save the neural network to a file: activation_function_derivative_from_string_callback was NULL");
+    DR_ASSERT_MSG(file_path, "attempt to load a neural netowrk from a file with NULL file_path");
+
+    dr_neural_network neural_network = { 0 };
+
+    FILE* file = fopen(file_path, "r");
+    if (!file) {
+        return neural_network;
+    }
+
+    char str_buffer[256] = { 0 };
+
+    fscanf(file, "%s", str_buffer);
+    if (strcmp(str_buffer, DR_NEURAL_NETWORK_BEGIN_STR) != 0) {
+        return neural_network;
+    }
+
+    fscanf(file, "%zu", &neural_network.layers_count);
+    neural_network.connections_count = neural_network.layers_count - 1;
+
+    neural_network.activation_functions =
+        (dr_activation_function*)DR_MALLOC(sizeof(dr_activation_function) * neural_network.connections_count);
+    neural_network.activation_functions_derivatives =
+        (dr_activation_function*)DR_MALLOC(sizeof(dr_activation_function) * neural_network.connections_count);
+    neural_network.layers      = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * neural_network.layers_count);
+    neural_network.connections = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * neural_network.connections_count);
+
+    size_t input_layer_height = 0;
+    fscanf(file, "%zu", &input_layer_height);
+    neural_network.layers[0] = dr_matrix_alloc(1, input_layer_height);
+
+
+    for (size_t i = 0; i < neural_network.connections_count; ++i) {
+        size_t connection_width  = 0;
+        size_t connection_height = 0;
+        fscanf(file, "%zu %zu", &connection_width, &connection_height);
+        dr_matrix* connection = neural_network.connections + i;
+        *connection = dr_matrix_alloc(connection_width, connection_height);
+
+        for (size_t row = 0; row < connection_height; ++row) {
+            for (size_t column = 0; column < connection_width; ++column) {
+                DR_FLOAT_TYPE element = 0;
+                fscanf(file, "%f", &element);
+                dr_matrix_unchecked_set_element(*connection, column, row, element);
+            }
+        }
+
+        size_t layer_height = 0;
+        fscanf(file, "%zu", &layer_height);
+        neural_network.layers[i + 1] = dr_matrix_alloc(1, layer_height);
+
+        fscanf(file, "%s", str_buffer);
+        dr_activation_function activation_function = activation_function_from_string_callback(str_buffer);
+        DR_ASSERT_MSG(activation_function, "neural_network error loading the activation function from a file");
+        neural_network.activation_functions[i] = activation_function;
+
+        fscanf(file, "%s", str_buffer);
+        dr_activation_function activation_function_derivative =
+            activation_function_derivative_from_string_callback(str_buffer);
+        DR_ASSERT_MSG(activation_function_derivative,
+            "neural_network error loading the activation function derivative from a file");
+        neural_network.activation_functions_derivatives[i] = activation_function_derivative;
+    }
+
+    fscanf(file, "%s", str_buffer);
+    if (strcmp(str_buffer, DR_NEURAL_NETWORK_END_STR) != 0) {
+        dr_neural_network_free(&neural_network);
+        return neural_network;
+    }
+
+    fclose(file);
+    return neural_network;
+}
+
+dr_neural_network dr_neural_network_load_from_file(const char* file_path) {
+    return dr_neural_network_load_from_file_custom_activation_function_transformer(
+        dr_default_activation_function_from_string, dr_default_activation_function_derivative_from_string, file_path);
 }
 
 void dr_neural_network_print(const dr_neural_network neural_network) {

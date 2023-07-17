@@ -85,14 +85,17 @@ UTEST(dr_neural_network, create_free) {
         const DR_FLOAT_TYPE expected_arr_layer_2[] = {
             0
         };
-        EXPECT_TRUE(dr_matrix_equals_to_array(mat_layer_1, expected_arr_layer_1, 1, 1));
-        EXPECT_TRUE(dr_matrix_equals_to_array(mat_layer_2, expected_arr_layer_2, 1, 1));
+        EXPECT_TRUE(dr_matrix_equals_to_array(
+            mat_layer_1, expected_arr_layer_1, 1, 1, DR_TESTING_MATRIX_EQUALS_EPSILON));
+        EXPECT_TRUE(dr_matrix_equals_to_array(
+            mat_layer_2, expected_arr_layer_2, 1, 1, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         // TEST CONNECTIONS
         const DR_FLOAT_TYPE expected_arr_connection_1[] = {
             0
         };
-        EXPECT_TRUE(dr_matrix_equals_to_array(mat_connection_1, expected_arr_connection_1, 1, 1));
+        EXPECT_TRUE(dr_matrix_equals_to_array(
+            mat_connection_1, expected_arr_connection_1, 1, 1, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_neural_network_free(&nn);
         EXPECT_EQ(nn.layers_count, 0);
@@ -129,15 +132,18 @@ UTEST(dr_neural_network, create_free) {
             0,
             0
         };
-        EXPECT_TRUE(dr_matrix_equals_to_array(mat_layer_1, expected_arr_layer_1, 1, 2));
-        EXPECT_TRUE(dr_matrix_equals_to_array(mat_layer_2, expected_arr_layer_2, 1, 2));
+        EXPECT_TRUE(dr_matrix_equals_to_array(
+            mat_layer_1, expected_arr_layer_1, 1, 2, DR_TESTING_MATRIX_EQUALS_EPSILON));
+        EXPECT_TRUE(dr_matrix_equals_to_array(
+            mat_layer_2, expected_arr_layer_2, 1, 2, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         // TEST CONNECTIONS
         const DR_FLOAT_TYPE expected_arr_connection_1[] = {
             0, 0,
             0, 0
         };
-        EXPECT_TRUE(dr_matrix_equals_to_array(mat_connection_1, expected_arr_connection_1, 2, 2));
+        EXPECT_TRUE(dr_matrix_equals_to_array(
+            mat_connection_1, expected_arr_connection_1, 2, 2, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_neural_network_free(&nn);
         EXPECT_EQ(nn.layers_count, 0);
@@ -184,9 +190,12 @@ UTEST(dr_neural_network, create_free) {
             0,
             0
         };
-        EXPECT_TRUE(dr_matrix_equals_to_array(mat_layer_1, expected_arr_layer_1, 1, 1));
-        EXPECT_TRUE(dr_matrix_equals_to_array(mat_layer_2, expected_arr_layer_2, 1, 2));
-        EXPECT_TRUE(dr_matrix_equals_to_array(mat_layer_3, expected_arr_layer_3, 1, 3));
+        EXPECT_TRUE(dr_matrix_equals_to_array(
+            mat_layer_1, expected_arr_layer_1, 1, 1, DR_TESTING_MATRIX_EQUALS_EPSILON));
+        EXPECT_TRUE(dr_matrix_equals_to_array(
+            mat_layer_2, expected_arr_layer_2, 1, 2, DR_TESTING_MATRIX_EQUALS_EPSILON));
+        EXPECT_TRUE(dr_matrix_equals_to_array(
+            mat_layer_3, expected_arr_layer_3, 1, 3, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         // TEST CONNECTIONS
         const DR_FLOAT_TYPE expected_arr_connection_1[] = {
@@ -198,8 +207,10 @@ UTEST(dr_neural_network, create_free) {
             0, 0,
             0, 0
         };
-        EXPECT_TRUE(dr_matrix_equals_to_array(mat_connection_1, expected_arr_connection_1, 1, 2));
-        EXPECT_TRUE(dr_matrix_equals_to_array(mat_connection_2, expected_arr_connection_2, 2, 3));
+        EXPECT_TRUE(dr_matrix_equals_to_array(
+            mat_connection_1, expected_arr_connection_1, 1, 2, DR_TESTING_MATRIX_EQUALS_EPSILON));
+        EXPECT_TRUE(dr_matrix_equals_to_array(
+            mat_connection_2, expected_arr_connection_2, 2, 3, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
         dr_neural_network_free(&nn);
         EXPECT_EQ(nn.layers_count, 0);
@@ -207,6 +218,56 @@ UTEST(dr_neural_network, create_free) {
         EXPECT_FALSE(nn.layers);
         EXPECT_FALSE(nn.connections);
         EXPECT_FALSE(nn.activation_functions);
+    }
+}
+
+UTEST(dr_neural_network, copy_create) {
+    {
+        const size_t layers[]     = { 1, 1 };
+        const size_t layers_count = DR_ARRAY_LENGTH(layers);
+        dr_activation_function acitvation_funcs[]   = { dr_tanh , dr_sigmoid };
+        dr_activation_function acitvation_funcs_d[] = { dr_tanh_derivative , dr_sigmoid_derivative };
+        dr_neural_network nn = dr_neural_network_create(layers, layers_count, acitvation_funcs, acitvation_funcs_d);
+
+        nn.layers[0].elements[0] = 0.3;
+        nn.connections[0].elements[0] = 5;
+
+        dr_neural_network copy_nn = dr_neural_network_copy_create(nn);
+        EXPECT_TRUE(dr_testing_neural_network_equals(nn, copy_nn, DR_TESTING_MATRIX_EQUALS_EPSILON));
+
+        dr_neural_network_free(&nn);
+        dr_neural_network_free(&copy_nn);
+    }
+
+    {
+        const size_t layers[]     = { 2, 2 };
+        const size_t layers_count = DR_ARRAY_LENGTH(layers);
+        dr_activation_function acitvation_funcs[]   = { dr_tanh , dr_sigmoid };
+        dr_activation_function acitvation_funcs_d[] = { dr_tanh_derivative , dr_sigmoid_derivative };
+        dr_neural_network nn = dr_neural_network_create(layers, layers_count, acitvation_funcs, acitvation_funcs_d);
+        dr_neural_network_randomize_weights(nn, 0, 1);
+
+        dr_neural_network copy_nn = dr_neural_network_copy_create(nn);
+        EXPECT_TRUE(dr_testing_neural_network_equals(nn, copy_nn, DR_TESTING_MATRIX_EQUALS_EPSILON));
+
+        dr_neural_network_free(&nn);
+        dr_neural_network_free(&copy_nn);
+    }
+
+    {
+        const size_t layers[]     = { 4, 6, 4, 2 };
+        const size_t layers_count = DR_ARRAY_LENGTH(layers);
+        dr_activation_function acitvation_funcs[]   = { dr_tanh , dr_sigmoid, dr_relu };
+        dr_activation_function acitvation_funcs_d[] =
+            { dr_tanh_derivative , dr_sigmoid_derivative, dr_relu_derivative };
+        dr_neural_network nn = dr_neural_network_create(layers, layers_count, acitvation_funcs, acitvation_funcs_d);
+        dr_neural_network_randomize_weights(nn, 0, 1);
+
+        dr_neural_network copy_nn = dr_neural_network_copy_create(nn);
+        EXPECT_TRUE(dr_testing_neural_network_equals(nn, copy_nn, DR_TESTING_MATRIX_EQUALS_EPSILON));
+
+        dr_neural_network_free(&nn);
+        dr_neural_network_free(&copy_nn);
     }
 }
 
@@ -314,7 +375,7 @@ UTEST(dr_neural_network, set_input) {
             DR_TESTING_NN_AF_PLUG, DR_TESTING_NN_AFD_PLUG);
         const DR_FLOAT_TYPE input[] = { 10 };
         dr_neural_network_set_input(nn, input);
-        EXPECT_TRUE(dr_matrix_equals_to_array(nn.layers[0], input, 1, 1));
+        EXPECT_TRUE(dr_matrix_equals_to_array(nn.layers[0], input, 1, 1, DR_TESTING_MATRIX_EQUALS_EPSILON));
         dr_neural_network_free(&nn);
     }
 
@@ -325,7 +386,7 @@ UTEST(dr_neural_network, set_input) {
             DR_TESTING_NN_AF_PLUG, DR_TESTING_NN_AFD_PLUG);
         const DR_FLOAT_TYPE input[] = { 1, 2 };
         dr_neural_network_set_input(nn, input);
-        EXPECT_TRUE(dr_matrix_equals_to_array(nn.layers[0], input, 1, 2));
+        EXPECT_TRUE(dr_matrix_equals_to_array(nn.layers[0], input, 1, 2, DR_TESTING_MATRIX_EQUALS_EPSILON));
         dr_neural_network_free(&nn);
     }
 
@@ -336,7 +397,7 @@ UTEST(dr_neural_network, set_input) {
             DR_TESTING_NN_AF_PLUG, DR_TESTING_NN_AFD_PLUG);
         const DR_FLOAT_TYPE input[] = { 0, 2, 7, 10 };
         dr_neural_network_set_input(nn, input);
-        EXPECT_TRUE(dr_matrix_equals_to_array(nn.layers[0], input, 1, 4));
+        EXPECT_TRUE(dr_matrix_equals_to_array(nn.layers[0], input, 1, 4, DR_TESTING_MATRIX_EQUALS_EPSILON));
         dr_neural_network_free(&nn);
     }
 }
@@ -354,7 +415,7 @@ UTEST(dr_neural_network, get_output) {
         dr_matrix_copy_array(output_layer, expected_output);
         dr_neural_network_get_output(nn, output);
 
-        EXPECT_TRUE(dr_matrix_equals_to_array(output_layer, expected_output, 1, 1));
+        EXPECT_TRUE(dr_matrix_equals_to_array(output_layer, expected_output, 1, 1, DR_TESTING_MATRIX_EQUALS_EPSILON));
         dr_neural_network_free(&nn);
     }
 
@@ -370,7 +431,7 @@ UTEST(dr_neural_network, get_output) {
         dr_matrix_copy_array(output_layer, expected_output);
         dr_neural_network_get_output(nn, output);
 
-        EXPECT_TRUE(dr_matrix_equals_to_array(output_layer, expected_output, 1, 2));
+        EXPECT_TRUE(dr_matrix_equals_to_array(output_layer, expected_output, 1, 2, DR_TESTING_MATRIX_EQUALS_EPSILON));
         dr_neural_network_free(&nn);
     }
 
@@ -386,7 +447,7 @@ UTEST(dr_neural_network, get_output) {
         dr_matrix_copy_array(output_layer, expected_output);
         dr_neural_network_get_output(nn, output);
 
-        EXPECT_TRUE(dr_matrix_equals_to_array(output_layer, expected_output, 1, 3));
+        EXPECT_TRUE(dr_matrix_equals_to_array(output_layer, expected_output, 1, 3, DR_TESTING_MATRIX_EQUALS_EPSILON));
         dr_neural_network_free(&nn);
     }
 }
@@ -988,6 +1049,9 @@ UTEST(dr_neural_network, save_to_file_custom_activation_function_transformer) {
     EXPECT_TRUE(custom_activation_function_derivative_transformer_called);
 
     dr_neural_network_free(&nn);
+
+    custom_activation_function_transformer_called = false;
+    custom_activation_function_derivative_transformer_called = false;
 }
 
 UTEST(dr_neural_network, save_to_file) {
@@ -1016,7 +1080,7 @@ UTEST(dr_neural_network, save_to_file) {
         FILE* file = fopen("test_save_to_file.txt", "r");
         char buffer[256] = { 0 };
         fscanf(file, "%s", buffer);
-        EXPECT_TRUE(strcmp(buffer, "DR_NEURAL_NETWORK_BEGIN") == 0);
+        EXPECT_TRUE(strcmp(buffer, DR_NEURAL_NETWORK_BEGIN_STR) == 0);
         size_t read_layers_count = 0;
         fscanf(file, "%zu", &read_layers_count);
         EXPECT_EQ(read_layers_count, layers_count);
@@ -1053,7 +1117,7 @@ UTEST(dr_neural_network, save_to_file) {
             DR_FREE(expected_func_d_name);
         }
         fscanf(file, "%s", buffer);
-        EXPECT_EQ(strcmp(buffer, "DR_NEURAL_NETWORK_END"), 0);
+        EXPECT_EQ(strcmp(buffer, DR_NEURAL_NETWORK_END_STR), 0);
 
         fclose(file);
         dr_neural_network_free(&nn);
@@ -1077,7 +1141,7 @@ UTEST(dr_neural_network, save_to_file) {
         FILE* file = fopen("test_save_to_file.txt", "r");
         char buffer[256] = { 0 };
         fscanf(file, "%s", buffer);
-        EXPECT_TRUE(strcmp(buffer, "DR_NEURAL_NETWORK_BEGIN") == 0);
+        EXPECT_TRUE(strcmp(buffer, DR_NEURAL_NETWORK_BEGIN_STR) == 0);
         size_t read_layers_count = 0;
         fscanf(file, "%zu", &read_layers_count);
         EXPECT_EQ(read_layers_count, layers_count);
@@ -1114,9 +1178,98 @@ UTEST(dr_neural_network, save_to_file) {
             DR_FREE(expected_func_d_name);
         }
         fscanf(file, "%s", buffer);
-        EXPECT_EQ(strcmp(buffer, "DR_NEURAL_NETWORK_END"), 0);
+        EXPECT_EQ(strcmp(buffer, DR_NEURAL_NETWORK_END_STR), 0);
 
         fclose(file);
         dr_neural_network_free(&nn);
+    }
+}
+
+static inline dr_activation_function dr_testing_details_activation_function_from_string(const char* string) {
+    custom_activation_function_transformer_called = true;
+    return dr_tanh;
+}
+
+static inline dr_activation_function dr_testing_details_activation_function_derivative_from_string(const char* string) {
+    custom_activation_function_derivative_transformer_called = true;
+    return dr_tanh_derivative;
+}
+
+UTEST(dr_neural_network, load_from_file_custom_activation_function_transformer) {
+    const size_t layers[]     = { 2, 3, 1 };
+    const size_t layers_count = DR_ARRAY_LENGTH(layers);
+    dr_activation_function activation_functions[]   = { &dr_tanh, &dr_tanh };
+    dr_activation_function activation_functions_d[] = { &dr_tanh_derivative, &dr_tanh_derivative };
+    dr_neural_network nn = dr_neural_network_create(layers, layers_count, activation_functions, activation_functions_d);
+
+    EXPECT_FALSE(custom_activation_function_transformer_called);
+    EXPECT_FALSE(custom_activation_function_derivative_transformer_called);
+
+    const char* file_path = "test_load_from_file_custom_activation_function_transformer.txt";
+    dr_neural_network_save_to_file(nn, file_path);
+    dr_neural_network_load_from_file_custom_activation_function_transformer(
+        dr_testing_details_activation_function_from_string,
+        dr_testing_details_activation_function_derivative_from_string,
+        file_path);
+
+    EXPECT_TRUE(custom_activation_function_transformer_called);
+    EXPECT_TRUE(custom_activation_function_derivative_transformer_called);
+
+    dr_neural_network_free(&nn);
+}
+
+UTEST(dr_neural_network, load_from_file) {
+    const char* file_path = "test_load_from_file.txt";
+
+    {
+        const size_t layers[]     = { 2, 3, 1 };
+        const size_t layers_count = DR_ARRAY_LENGTH(layers);
+        dr_activation_function activation_functions[]   = { &dr_tanh, &dr_tanh };
+        dr_activation_function activation_functions_d[] = { &dr_tanh_derivative, &dr_tanh_derivative };
+        dr_neural_network nn = dr_neural_network_create(
+            layers, layers_count, activation_functions, activation_functions_d);
+
+        dr_neural_network_randomize_weights(nn, 0, 1);
+
+        const bool save_res = dr_neural_network_save_to_file(nn, file_path);
+        EXPECT_TRUE(save_res);
+
+        dr_neural_network copy_nn = dr_neural_network_copy_create(nn);
+        dr_neural_network_free(&nn);
+
+        nn = dr_neural_network_load_from_file(file_path);
+
+        EXPECT_TRUE(dr_neural_network_valid(nn));
+        EXPECT_TRUE(dr_testing_neural_network_equals(copy_nn, nn, DR_TESTING_MATRIX_EQUALS_EPSILON));
+
+        dr_neural_network_free(&copy_nn);
+    }
+
+    {
+        const size_t layers[]     = { 4, 5, 2, 1 };
+        const size_t layers_count = DR_ARRAY_LENGTH(layers);
+        dr_activation_function activation_functions[]   = { &dr_sigmoid, &dr_tanh, &dr_relu };
+        dr_activation_function activation_functions_d[] =
+            { &dr_sigmoid_derivative, &dr_tanh_derivative, &dr_relu_derivative };
+        dr_neural_network nn = dr_neural_network_create(
+            layers, layers_count, activation_functions, activation_functions_d);
+
+        dr_neural_network_randomize_weights(nn, 0, 1);
+
+        const bool save_res = dr_neural_network_save_to_file(nn, file_path);
+        EXPECT_TRUE(save_res);
+
+        dr_neural_network copy_nn = dr_neural_network_copy_create(nn);
+        dr_neural_network_free(&nn);
+
+        nn = dr_neural_network_load_from_file(file_path);
+
+        dr_neural_network_print(nn);
+        dr_neural_network_print(copy_nn);
+
+        EXPECT_TRUE(dr_neural_network_valid(nn));
+        EXPECT_TRUE(dr_testing_neural_network_equals(copy_nn, nn, DR_TESTING_MATRIX_EQUALS_EPSILON));
+
+        dr_neural_network_free(&copy_nn);
     }
 }
