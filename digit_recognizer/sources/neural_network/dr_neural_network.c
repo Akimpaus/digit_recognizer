@@ -129,18 +129,19 @@ dr_neural_network dr_neural_network_unchecked_copy_create(const dr_neural_networ
 
     new_neural_network.activation_functions =
         (dr_activation_function*)DR_MALLOC(sizeof(dr_activation_function) * new_neural_network.connections_count);
-    DR_ASSERT_MSG(new_neural_network.activation_functions, "alloc neural network activation functions error");
+    DR_ASSERT_MSG(new_neural_network.activation_functions,
+        "alloc neural network activation functions error when copying");
 
     new_neural_network.activation_functions_derivatives =
         (dr_activation_function*)DR_MALLOC(sizeof(dr_activation_function) * new_neural_network.connections_count);
     DR_ASSERT_MSG(new_neural_network.activation_functions_derivatives,
-        "alloc neural network activation functions derivatives error");
+        "alloc neural network activation functions derivatives error when copying");
 
     new_neural_network.connections = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * new_neural_network.connections_count);
-    DR_ASSERT_MSG(new_neural_network.connections, "alloc neural network connections error");
+    DR_ASSERT_MSG(new_neural_network.connections, "alloc neural network connections error when copying");
 
     new_neural_network.layers = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * new_neural_network.layers_count);
-    DR_ASSERT_MSG(new_neural_network.layers, "alloc neural network layers error");
+    DR_ASSERT_MSG(new_neural_network.layers, "alloc neural network layers error when copying");
 
     new_neural_network.layers[0] = dr_matrix_unchecked_copy_create(neural_network.layers[0]);
 
@@ -351,7 +352,9 @@ void dr_neural_network_unchecked_train(
     const size_t neural_network_output_size = dr_neural_network_unchecked_output_size(neural_network);
 
     DR_FLOAT_TYPE* errors      = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE) * neural_network_output_size);
+    DR_ASSERT_MSG(errors, "buffer for errors alloc error, when training neural network");
     DR_FLOAT_TYPE* real_output = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE) * neural_network_output_size);
+    DR_ASSERT_MSG(real_output, "buffer for real output alloc error, when training neural network");
 
     for (size_t epoch = 0; epoch < epochs; ++epoch) {
         for (size_t data_index = 0; data_index < train_count; ++data_index) {
@@ -512,10 +515,18 @@ dr_neural_network dr_neural_network_load_from_file_custom_activation_function_tr
 
     neural_network.activation_functions =
         (dr_activation_function*)DR_MALLOC(sizeof(dr_activation_function) * neural_network.connections_count);
+    DR_ASSERT_MSG(neural_network.activation_functions,
+        "neural network activation functions alloc error, when loading from file");
     neural_network.activation_functions_derivatives =
         (dr_activation_function*)DR_MALLOC(sizeof(dr_activation_function) * neural_network.connections_count);
+    DR_ASSERT_MSG(neural_network.activation_functions_derivatives,
+        "neural network activation functions derivatives alloc error, when loading from file");
     neural_network.layers      = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * neural_network.layers_count);
+    DR_ASSERT_MSG(neural_network.layers,
+        "neural network layers alloc error, when loading from file");
     neural_network.connections = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * neural_network.connections_count);
+    DR_ASSERT_MSG(neural_network.activation_functions,
+        "neural network connections alloc error, when loading from file");
 
     size_t input_layer_height = 0;
     fscanf(file, "%zu", &input_layer_height);

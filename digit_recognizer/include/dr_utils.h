@@ -1,8 +1,6 @@
 #ifndef DR_UTILS_H
 #define DR_UTILS_H
 
-// TODO: add checks (where it's no) on DR_MALLOC. after it assert on not NULL.
-
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
