@@ -2,7 +2,7 @@
 #define DR_TESTING_H
 
 #include <utest.h>
-#include <neural_network/dr_matrix.h>
+#include <dr_matrix.h>
 
 #define DR_TESTING_MATRIX_EQUALS_EPSILON 0.001
 

@@ -1,5 +1,5 @@
 #include <utest.h>
-#include "dr_testing_matrix.h"
+#include <dr_testing_matrix.h>
 
 UTEST(dr_matrix, dr_matrix_correct_sizes) {
     EXPECT_TRUE(dr_matrix_correct_sizes(1, 1));

@@ -1,4 +1,4 @@
-#include <neural_network/dr_neural_network.h>
+#include <dr_neural_network.h>
 
 DR_FLOAT_TYPE dr_sigmoid(const DR_FLOAT_TYPE value) {
     return 1.0 / (1.0 + exp(-value));
