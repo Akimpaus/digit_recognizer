@@ -1,9 +1,25 @@
 #include <dr_application.h>
-#include <stdio.h>
+#include <raylib.h>
+
+#define RAYGUI_IMPLEMENTATION
+#include <raygui.h>
 
 int main() {
 
-    printf("%s\n", "test");
+    InitWindow(800, 600, "Test");
+
+
+    SetTargetFPS(30);
+    while (!WindowShouldClose()) {
+        BeginDrawing();
+
+        Rectangle rect = { 0, 0, 100, 100 };
+        GuiButton(rect, "test");
+
+        EndDrawing();
+    }
+
+    CloseWindow();
 
     return 0;
 }
