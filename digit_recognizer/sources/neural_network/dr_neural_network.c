@@ -99,25 +99,24 @@ dr_neural_network dr_neural_network_create(
     nn.layers_count      = layers_count;
     nn.connections_count = layers_count - 1; // <- number of connections less than count of layers by 1
 
-    nn.layers = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * nn.layers_count);
-    DR_ASSERT_MSG(nn.layers, "alloc neural network layers error");
-    for (size_t i = 0; i < nn.layers_count; ++i) {
-        const size_t layer_size = layers_sizes[i];
-        DR_ASSERT_MSG(layer_size > 0, "layer size of neural network must be more than zero");
-        nn.layers[i] = dr_matrix_create_filled(1, layer_size, 0);
-    }
-
     nn.activation_functions = (dr_activation_function*)DR_MALLOC(sizeof(dr_activation_function) * nn.connections_count);
     DR_ASSERT_MSG(nn.activation_functions, "alloc neural network activation functions error");
     nn.activation_functions_derivatives =
         (dr_activation_function*)DR_MALLOC(sizeof(dr_activation_function) * nn.connections_count);
     DR_ASSERT_MSG(nn.activation_functions_derivatives, "alloc neural network activation functions derivatives error");
+
+    nn.layers = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * nn.layers_count);
+    DR_ASSERT_MSG(nn.layers, "alloc neural network layers error");
     nn.connections = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * nn.connections_count);
     DR_ASSERT_MSG(nn.connections, "alloc neural network connections error");
+
+    nn.layers[0] = dr_matrix_create_filled(1, layers_sizes[0], 0);
     for (size_t i = 0; i < nn.connections_count; ++i) {
+        const size_t layer_index = i + 1;
         nn.activation_functions[i] = activation_functions[i];
         nn.activation_functions_derivatives[i] = activation_functions_derivatives[i];
-        nn.connections[i] = dr_matrix_create_filled(layers_sizes[i], layers_sizes[i + 1], 0);
+        nn.connections[i] = dr_matrix_create_filled(layers_sizes[i], layers_sizes[layer_index], 0);
+        nn.layers[layer_index] = dr_matrix_create_filled(1, layers_sizes[layer_index], 0);
     }
 
     return nn;
@@ -520,7 +519,7 @@ dr_neural_network dr_neural_network_load_from_file_custom_activation_function_tr
 
     size_t input_layer_height = 0;
     fscanf(file, "%zu", &input_layer_height);
-    neural_network.layers[0] = dr_matrix_alloc(1, input_layer_height);
+    neural_network.layers[0] = dr_matrix_create_filled(1, input_layer_height, 0);
 
 
     for (size_t i = 0; i < neural_network.connections_count; ++i) {
@@ -540,7 +539,7 @@ dr_neural_network dr_neural_network_load_from_file_custom_activation_function_tr
 
         size_t layer_height = 0;
         fscanf(file, "%zu", &layer_height);
-        neural_network.layers[i + 1] = dr_matrix_alloc(1, layer_height);
+        neural_network.layers[i + 1] = dr_matrix_create_filled(1, layer_height, 0);
 
         fscanf(file, "%s", str_buffer);
         dr_activation_function activation_function = activation_function_from_string_callback(str_buffer);

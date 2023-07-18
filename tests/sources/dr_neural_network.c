@@ -1055,6 +1055,8 @@ UTEST(dr_neural_network, save_to_file_custom_activation_function_transformer) {
 }
 
 UTEST(dr_neural_network, save_to_file) {
+    const char* file_path = "test_save_to_file.txt";
+
     {
         const size_t layers[]     = { 2, 3, 1 };
         const size_t layers_count = DR_ARRAY_LENGTH(layers);
@@ -1074,10 +1076,10 @@ UTEST(dr_neural_network, save_to_file) {
         nn.connections[1].elements[1] = 0.6;
         nn.connections[1].elements[2] = -0.2;
 
-        const bool res = dr_neural_network_save_to_file(nn, "test_save_to_file.txt");
+        const bool res = dr_neural_network_save_to_file(nn, file_path);
         EXPECT_TRUE(res);
 
-        FILE* file = fopen("test_save_to_file.txt", "r");
+        FILE* file = fopen(file_path, "r");
         char buffer[256] = { 0 };
         fscanf(file, "%s", buffer);
         EXPECT_TRUE(strcmp(buffer, DR_NEURAL_NETWORK_BEGIN_STR) == 0);
@@ -1135,10 +1137,10 @@ UTEST(dr_neural_network, save_to_file) {
 
         dr_neural_network_randomize_weights(nn, 0, 1);
 
-        const bool res = dr_neural_network_save_to_file(nn, "test_save_to_file.txt");
+        const bool res = dr_neural_network_save_to_file(nn, file_path);
         EXPECT_TRUE(res);
 
-        FILE* file = fopen("test_save_to_file.txt", "r");
+        FILE* file = fopen(file_path, "r");
         char buffer[256] = { 0 };
         fscanf(file, "%s", buffer);
         EXPECT_TRUE(strcmp(buffer, DR_NEURAL_NETWORK_BEGIN_STR) == 0);
@@ -1196,6 +1198,8 @@ static inline dr_activation_function dr_testing_details_activation_function_deri
 }
 
 UTEST(dr_neural_network, load_from_file_custom_activation_function_transformer) {
+    const char* file_path = "test_load_from_file_custom_activation_function_transformer.txt";
+
     const size_t layers[]     = { 2, 3, 1 };
     const size_t layers_count = DR_ARRAY_LENGTH(layers);
     dr_activation_function activation_functions[]   = { &dr_tanh, &dr_tanh };
@@ -1205,7 +1209,6 @@ UTEST(dr_neural_network, load_from_file_custom_activation_function_transformer) 
     EXPECT_FALSE(custom_activation_function_transformer_called);
     EXPECT_FALSE(custom_activation_function_derivative_transformer_called);
 
-    const char* file_path = "test_load_from_file_custom_activation_function_transformer.txt";
     dr_neural_network_save_to_file(nn, file_path);
     dr_neural_network_load_from_file_custom_activation_function_transformer(
         dr_testing_details_activation_function_from_string,
@@ -1242,6 +1245,7 @@ UTEST(dr_neural_network, load_from_file) {
         EXPECT_TRUE(dr_neural_network_valid(nn));
         EXPECT_TRUE(dr_testing_neural_network_equals(copy_nn, nn, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
+        dr_neural_network_free(&nn);
         dr_neural_network_free(&copy_nn);
     }
 
@@ -1264,12 +1268,10 @@ UTEST(dr_neural_network, load_from_file) {
 
         nn = dr_neural_network_load_from_file(file_path);
 
-        dr_neural_network_print(nn);
-        dr_neural_network_print(copy_nn);
-
         EXPECT_TRUE(dr_neural_network_valid(nn));
         EXPECT_TRUE(dr_testing_neural_network_equals(copy_nn, nn, DR_TESTING_MATRIX_EQUALS_EPSILON));
 
+        dr_neural_network_free(&nn);
         dr_neural_network_free(&copy_nn);
     }
 }

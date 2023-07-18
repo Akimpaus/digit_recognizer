@@ -122,7 +122,7 @@ dr_neural_network dr_neural_network_load_from_file_custom_activation_function_tr
     const dr_activation_function_from_string_callback activation_function_derivative_from_string_callback,
     const char* file_path);
 
-dr_neural_network dr_neural_network_load_from_file(const char* file_path); // test
+dr_neural_network dr_neural_network_load_from_file(const char* file_path);
 
 void dr_neural_network_print(const dr_neural_network neural_network);
 
