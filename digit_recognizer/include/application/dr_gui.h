@@ -2,7 +2,7 @@
 #define DR_GUI_H
 
 #include <raygui.h>
-#include <dr_utils.h>
+#include <general/dr_utils.h>
 
 Vector2 dr_gui_canvas(const Rectangle bounds, const float button_clear_height, RenderTexture2D target,
     const Color draw_color, const Color erase_color, Vector2 last_point);

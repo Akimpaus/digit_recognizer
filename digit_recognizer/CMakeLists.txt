@@ -1,11 +1,12 @@
 project(digit_recognizer)
 
-add_subdirectory(neural_network)
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Raylib
 set(RAYLIB_VERSION 4.5.0)
 find_package(raylib ${RAYLIB_VERSION} QUIET)
 if (NOT raylib_FOUND)
+  message("Raylib not found. Downloading...")
   include(FetchContent)
   FetchContent_Declare(
     raylib
@@ -14,6 +15,7 @@ if (NOT raylib_FOUND)
   )
   FetchContent_GetProperties(raylib)
   if (NOT raylib_POPULATED)
+    message("Raylib not populated. Populating...")
     set(FETCHCONTENT_QUIET NO)
     FetchContent_Populate(raylib)
     set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -21,16 +23,25 @@ if (NOT raylib_FOUND)
   endif()
 endif()
 
-file(GLOB_RECURSE APPLICATION_SOURCES application/sources/*.c)
-add_executable(${PROJECT_NAME} ${APPLICATION_SOURCES} main.c)
-include_directories(
-    application/include
-    application/third_party/include
-    ../general/include)
-target_link_libraries(${PROJECT_NAME} PRIVATE
-    neural_network_lib
-    raylib)
+# Project lib
+set(PROJECT_LIB_NAME ${PROJECT_NAME}_lib)
+file(GLOB_RECURSE SOURCES sources/*.c)
+list(REMOVE_ITEM SOURCES sources/main.c)
+add_library(${PROJECT_LIB_NAME} ${SOURCES})
+target_include_directories(${PROJECT_LIB_NAME} PUBLIC
+  include
+  third_party/include
+  )
 
+# Project execuatable
+add_executable(${PROJECT_NAME} sources/main.c)
+target_link_libraries(${PROJECT_NAME} PUBLIC
+  m #math
+  ${PROJECT_LIB_NAME}
+  raylib
+  )
+
+# OS specific
 if (APPLE)
     target_link_libraries(${PROJECT_NAME} "-framework IOKit")
     target_link_libraries(${PROJECT_NAME} "-framework Cocoa")

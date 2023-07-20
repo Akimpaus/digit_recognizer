@@ -1,4 +1,4 @@
-#include <dr_matrix.h>
+#include <neural_network/dr_matrix.h>
 #include <math.h>
 
 bool dr_matrix_correct_sizes(const size_t width, const size_t height) {

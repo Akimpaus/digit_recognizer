@@ -1,4 +1,4 @@
-#include "dr_testing_neural_network.h"
+#include <dr_testing_neural_network.h>
 
 UTEST(dr_neural_network, dr_sigmoid) {
     EXPECT_NEAR(dr_sigmoid(-10), 0.00004539786870227497, 0.0000001);

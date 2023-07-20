@@ -1,5 +1,5 @@
-#include <dr_application.h>
-#include "dr_gui.h"
+#include <application/dr_application.h>
+#include <application/dr_gui.h>
 
 #define DR_APPLICATION_DIGIT_RECOGNIZER_STR "Digit recognizer"
 #define DR_APPLICATION_TAB_NAMES     "Dataset;Trainig;Prediction"
@@ -81,6 +81,7 @@ void dr_application_draw_dataset_tab() {
         BeginTextureMode(canvas_dataset);
         ClearBackground(DR_APPLICATION_CANVAS_ERASE_COLOR);
         EndTextureMode();
+        sprintf(dataset_status_bar_str_buffer, "%s %d %s", "Digit", clicked, "was added");
     }
 
     Rectangle status_bar_rect = {

@@ -1,8 +1,15 @@
 project(digit_recognizer_tests)
 
-include_directories(
-    neural_network/include
-    third_party/include)
 file(GLOB_RECURSE SOURCES *.c)
+
 add_executable(${PROJECT_NAME} ${SOURCES})
-target_link_libraries(${PROJECT_NAME} neural_network_lib)
+
+include_directories(
+    digit_recognizer/include
+    include/neural_network
+    third_party/include)
+
+target_link_libraries(${PROJECT_NAME} PUBLIC
+    digit_recognizer_lib
+    m #math
+)

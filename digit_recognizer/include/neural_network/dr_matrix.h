@@ -2,7 +2,7 @@
 #define DR_MATRIX_H
 
 #include <stdbool.h>
-#include <dr_utils.h>
+#include <general/dr_utils.h>
 
 typedef struct {
     DR_FLOAT_TYPE* elements;
