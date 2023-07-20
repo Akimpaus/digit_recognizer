@@ -1,11 +1,13 @@
 #ifndef DR_UTILS_H
 #define DR_UTILS_H
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
 #define DR_FLOAT_TYPE float
+#define DR_STR_BUFFER_SIZE 256
 
 static inline void* dr_malloc(const size_t size) {
     void* ptr = malloc(size);

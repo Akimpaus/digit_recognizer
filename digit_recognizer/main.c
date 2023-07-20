@@ -1,25 +1,12 @@
 #include <dr_application.h>
-#include <raylib.h>
 
-#define RAYGUI_IMPLEMENTATION
-#include <raygui.h>
+#include <stdio.h>
 
 int main() {
 
-    InitWindow(800, 600, "Test");
-
-
-    SetTargetFPS(30);
-    while (!WindowShouldClose()) {
-        BeginDrawing();
-
-        Rectangle rect = { 0, 0, 100, 100 };
-        GuiButton(rect, "test");
-
-        EndDrawing();
-    }
-
-    CloseWindow();
+    dr_application_create();
+    dr_application_start();
+    dr_application_close();
 
     return 0;
 }

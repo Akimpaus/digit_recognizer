@@ -21,7 +21,8 @@ if (NOT raylib_FOUND)
   endif()
 endif()
 
-add_executable(${PROJECT_NAME} main.c)
+file(GLOB_RECURSE APPLICATION_SOURCES application/sources/*.c)
+add_executable(${PROJECT_NAME} ${APPLICATION_SOURCES} main.c)
 include_directories(
     application/include
     application/third_party/include

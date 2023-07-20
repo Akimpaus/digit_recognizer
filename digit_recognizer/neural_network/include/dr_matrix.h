@@ -1,7 +1,6 @@
 #ifndef DR_MATRIX_H
 #define DR_MATRIX_H
 
-#include <stdio.h>
 #include <stdbool.h>
 #include <dr_utils.h>
 
