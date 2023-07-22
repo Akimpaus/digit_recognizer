@@ -1,5 +1,6 @@
 #include <application/dr_application.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 int main() {
 

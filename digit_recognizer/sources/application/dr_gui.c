@@ -58,7 +58,7 @@ Vector2 dr_gui_canvas(const Rectangle bounds, const float button_clear_height, R
     return last_point;
 }
 
-int dr_gui_numeric_buttons_row(const Rectangle bounds, const size_t count, const int* values) {
+int dr_gui_numeric_buttons_row(const Rectangle bounds, const size_t count, const size_t* values) {
     int clicked = -1;
 
     if (count == 0) {
@@ -78,11 +78,22 @@ int dr_gui_numeric_buttons_row(const Rectangle bounds, const size_t count, const
             button_size.x,
             button_size.y
         };
-        char button_text[] = "0\0";
-        button_text[0] = i + '0';
-        if (GuiButton(button_bounds, button_text)) {
+        if (GuiButton(button_bounds, TextFormat("%d", i))) {
             clicked = i;
         }
+
+
+        const char* label_text = TextFormat("%d", values[i]);
+        const Font label_text_font       = GetFontDefault();
+        const float label_text_font_size = 10;
+        const float label_text_spacing   = 0;
+        const Vector2 measure_label_text =
+            MeasureTextEx(label_text_font, label_text, label_text_font_size, label_text_spacing);
+        const Vector2 label_text_position = {
+            button_bounds.x + button_bounds.width / 2 - measure_label_text.x / 2,
+            button_bounds.y + button_bounds.height + measure_label_text.y / 2
+        };
+        DrawTextEx(label_text_font, label_text, label_text_position, label_text_font_size, label_text_spacing, LIGHTGRAY);
     }
 
     return clicked;

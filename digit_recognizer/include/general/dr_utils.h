@@ -18,8 +18,21 @@ static inline void* dr_malloc(const size_t size) {
     return ptr;
 }
 
+static inline void* dr_realloc(void* ptr, const size_t size) {
+    ptr = realloc(ptr, size);
+    if (!ptr) {
+        fprintf(stderr, "%s %zu %s\n", "Error when trying to reallocate memory for", size, "bytes");
+        exit(-1);
+    }
+    return ptr;
+}
+
 #ifndef DR_MALLOC
 # define DR_MALLOC(size) dr_malloc(size)
+#endif
+
+#ifndef DR_REALLOC
+# define DR_REALLOC(ptr, size) dr_realloc(ptr, size)
 #endif
 
 #ifndef DR_FREE
