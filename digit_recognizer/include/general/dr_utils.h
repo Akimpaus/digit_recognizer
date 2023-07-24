@@ -47,6 +47,9 @@ static inline void* dr_realloc(void* ptr, const size_t size) {
 # define DR_ASSERT_MSG(cond, msg) assert((cond && msg))
 #endif
 
+#define DR_MIN(a, b) (((a) < (b)) ? (a) : (b)) // test
+#define DR_MAX(a, b) (((a) > (b)) ? (a) : (b)) // test
+
 #define DR_ARRAY_LENGTH(array) (sizeof(array) / sizeof(*array))
 
 static inline size_t dr_size_t_len(size_t number) {

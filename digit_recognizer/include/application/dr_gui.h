@@ -4,6 +4,8 @@
 #include <raygui.h>
 #include <general/dr_utils.h>
 
+#define RAYGUI_WINDOWBOX_STATUSBAR_HEIGHT 20
+
 Vector2 dr_gui_canvas(const Rectangle bounds, const float button_clear_height, RenderTexture2D target,
     const Color draw_color, const Color erase_color, Vector2 last_point);
 
