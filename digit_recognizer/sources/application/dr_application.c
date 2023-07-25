@@ -1,6 +1,8 @@
 #include <application/dr_application.h>
 #include <application/dr_gui.h>
 
+// in dataset_tab i do all logic in the draw function. move logic to the update function.
+
 #define DR_APPLICATION_WINDOW_WIDTH         800
 #define DR_APPLICATION_WINDOW_HEIGHT        600
 #define DR_APPLICATION_DIGIT_RECOGNIZER_STR "Digit recognizer"
@@ -22,6 +24,10 @@
 #define DR_APPLICATION_CANVAS_WINDOW_HEIGHT       DR_APPLICATION_CANVAS_HEIGHT +\
     DR_APPLICATION_CANVAS_CLEAR_BUTTON_HEIGHT
 
+#define DR_APPLICATION_TRAINING_SIGMOID_STR "sigmoid"
+#define DR_APPLICATION_TRAINING_TANH_STR    "tanh"
+#define DR_APPLICATION_TRAINING_RELU_STR    "ReLU"
+
 typedef enum {
     dr_application_tab_dataset,
     dr_application_tab_training,
@@ -30,24 +36,27 @@ typedef enum {
 
 // general
 Vector2 window_size            = { 0 };
-Rectangle work_area            = { 0 };
 dr_application_tab current_tab = dr_application_tab_dataset;
 
 // dataset
 RenderTexture2D dataset_canvas_rtexture = { 0 };
 Vector2 dataset_canvas_last_point       = { -1 };
 char dataset_status_bar_str_buffer[DR_STR_BUFFER_SIZE]            = DR_APPLICATION_DIGIT_RECOGNIZER_STR;
+size_t dataset_digits_count_all                                   = 0;
 size_t dataset_digits_count[DR_APPLICATION_DIGITS_COUNT]          = { 0 };
 DR_FLOAT_TYPE* dataset_digits_pixels[DR_APPLICATION_DIGITS_COUNT] = { NULL };
 
 // training
-int training_list_view_index          = 0;
-int training_list_view_active         = 0;
-int training_controller_layer_size    = 1;
+int training_list_view_index  = 0;
+int training_list_view_active = -1;
+int training_list_view_focus  = 0;
+size_t training_controller_layer_size = 1;
 int training_controller_dropbox_index = 0;
 bool training_controller_dropbox_edit = false;
+int training_hidden_layers_count      = 0;
+char** training_hidden_layers_info    = NULL;
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////// DATASET
 void dr_application_dataset_add_digit(const size_t digit) {
     DR_ASSERT_MSG(digit >= 0 && digit <= 9, "attempt to add a not correct digit to application dataset");
     const size_t old_digits_count     = dataset_digits_count[digit];
@@ -69,6 +78,7 @@ void dr_application_dataset_add_digit(const size_t digit) {
     UnloadImage(dataset_canvas_image);
     dataset_digits_count[digit]  = new_digits_count;
     dataset_digits_pixels[digit] = reallocated_pixels;
+    ++dataset_digits_count_all;
 }
 
 void dr_application_dataset_clear() {
@@ -79,6 +89,7 @@ void dr_application_dataset_clear() {
             dataset_digits_count[i]  = 0;
         }
     }
+    dataset_digits_count_all = 0;
 }
 
 void dr_application_dataset_canvas_clear() {
@@ -87,43 +98,15 @@ void dr_application_dataset_canvas_clear() {
     EndTextureMode();
 }
 
-void dr_application_create() {
-    InitWindow(DR_APPLICATION_WINDOW_WIDTH, DR_APPLICATION_WINDOW_HEIGHT, DR_APPLICATION_DIGIT_RECOGNIZER_STR);
-    SetTargetFPS(30);
-
-    dataset_canvas_rtexture = LoadRenderTexture(
-        DR_APPLICATION_CANVAS_RESOLUTION_WIDTH, DR_APPLICATION_CANVAS_RESOLUTION_HEIGHT);
-    dr_application_dataset_canvas_clear();
-}
-
-void dr_application_close() {
-    dr_application_dataset_clear();
-    UnloadRenderTexture(dataset_canvas_rtexture);
-    CloseWindow();
-}
-
-void dr_application_update_dataset_tab() {
-    work_area = CLITERAL(Rectangle) {
+void dr_application_draw_dataset_tab() {
+    Rectangle work_area = {
         0,
         DR_APPLICATION_TAB_BOTTOM,
         window_size.x,
         window_size.y - DR_APPLICATION_STATUS_BAR_HEIGHT - DR_APPLICATION_TAB_BOTTOM
     };
-}
+    const bool dataset_empty = dataset_digits_count_all == 0;
 
-void dr_application_update_training_tab() {
-    work_area = CLITERAL(Rectangle) {
-        0,
-        DR_APPLICATION_TAB_BOTTOM,
-        window_size.x,
-        window_size.y - DR_APPLICATION_TAB_BOTTOM
-    };
-}
-
-void dr_application_update_prediction_tab() {
-}
-
-void dr_application_draw_dataset_tab() {
     const Rectangle canvas_bounds = {
         work_area.x + (work_area.width / 2 - DR_APPLICATION_CANVAS_WIDTH / 2),
         work_area.y + (work_area.height / 2.2 - DR_APPLICATION_CANVAS_HEIGHT / 2) -
@@ -152,7 +135,7 @@ void dr_application_draw_dataset_tab() {
     const Rectangle status_bar_rect = {
         0,
         window_size.y - DR_APPLICATION_STATUS_BAR_HEIGHT,
-        window_size.x / 1.2,
+        window_size.x / (dataset_empty ? 1 : 1.2),
         DR_APPLICATION_STATUS_BAR_HEIGHT
     };
     GuiStatusBar(status_bar_rect, dataset_status_bar_str_buffer);
@@ -164,13 +147,83 @@ void dr_application_draw_dataset_tab() {
         window_size.x - (status_bar_rect.x + status_bar_rect.width) - clear_dataset_button_rect_offset * 2,
         status_bar_rect.height
     };
-    if (GuiButton(clear_dataset_button_rect, "Clear dataset")) {
+    if (!dataset_empty && GuiButton(clear_dataset_button_rect, "Clear dataset")) {
         dr_application_dataset_clear();
         sprintf(dataset_status_bar_str_buffer, "%s", "Dataset has been cleared");
     }
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////// TRAINING
+void dr_application_training_add_hidden_layer() {
+    training_hidden_layers_info =
+        (char**)DR_REALLOC(training_hidden_layers_info, sizeof(char*) * (training_hidden_layers_count + 1));
+    DR_ASSERT_MSG(training_hidden_layers_info, "application hidden layers info realloc error");
+
+    training_hidden_layers_info[training_hidden_layers_count] = (char*)DR_MALLOC(sizeof(char) * DR_STR_BUFFER_SIZE);
+    DR_ASSERT_MSG(training_hidden_layers_info[training_hidden_layers_count],
+        "application hidden layers info alloc error");
+
+    sprintf(training_hidden_layers_info[training_hidden_layers_count], "%s", "10 " DR_APPLICATION_TRAINING_SIGMOID_STR);
+    ++training_hidden_layers_count;
+}
+
+void dr_application_training_remove_hidden_layer(const size_t index) {
+    DR_ASSERT_MSG(index < training_hidden_layers_count, "attempt to remove a not exist hidden layer");
+
+    const size_t new_layers_count = training_hidden_layers_count - 1;
+    char** new_arr = (char**)DR_MALLOC(sizeof(char*) * new_layers_count);
+    DR_ASSERT_MSG(new_arr, "apllication hidden layer remove - new hidden layers info alloc error");
+    size_t new_arr_i = 0;
+    for (size_t i = 0; i < training_hidden_layers_count; ++i) {
+        if (i == index) {
+            DR_FREE(training_hidden_layers_info[i]);
+            continue;
+        }
+        new_arr[new_arr_i] = (char*)DR_MALLOC(sizeof(char) * DR_STR_BUFFER_SIZE);
+        DR_ASSERT_MSG(new_arr[new_arr_i], "apllication hidden layer remove - new hidden layer info alloc error");
+        memcpy(new_arr[new_arr_i], training_hidden_layers_info[i], DR_STR_BUFFER_SIZE);
+        DR_FREE(training_hidden_layers_info[i]);
+        ++new_arr_i;
+    }
+    DR_FREE(training_hidden_layers_info);
+
+    training_hidden_layers_info  = new_arr;
+    training_hidden_layers_count = new_layers_count;
+}
+
+void dr_application_training_set_hidden_layer(
+    const size_t layer_index, const size_t layer_size, const char* activation_function) {
+    DR_ASSERT_MSG(layer_index < training_hidden_layers_count,
+        "index out of range when trying to set a hidden layer in application");
+
+    const char* text = TextFormat("%zu %s", layer_size, activation_function);
+    TextCopy(training_hidden_layers_info[layer_index], text);
+}
+
+void dr_application_training_get_hidden_layer(const size_t layer_index, size_t* layer_size, char* activation_function) {
+    DR_ASSERT_MSG(layer_index < training_hidden_layers_count,
+        "index out of range when trying to get a hidden layer in application");
+
+    sscanf(training_hidden_layers_info[layer_index], "%zu %s", layer_size, activation_function);
+}
+
+void dr_application_training_clear_hidden_layers() {
+    for (size_t i = 0; i < training_hidden_layers_count; ++i) {
+        DR_FREE(training_hidden_layers_info[i]);
+        training_hidden_layers_info[i] = NULL;
+    }
+    DR_FREE(training_hidden_layers_info);
+    training_hidden_layers_info = NULL;
+    training_hidden_layers_count = 0;
+}
+
 void dr_application_draw_training_tab() {
+    Rectangle work_area = {
+        0,
+        DR_APPLICATION_TAB_BOTTOM,
+        window_size.x,
+        window_size.y - DR_APPLICATION_TAB_BOTTOM
+    };
     const bool layer_selected = training_list_view_active >= 0;
 
     const Vector2 hidden_layers_bounds_size = {
@@ -215,8 +268,39 @@ void dr_application_draw_training_tab() {
         layer_controller_bounds_size.y
     };
 
-    training_list_view_active = GuiListView(list_view_bounds, "test;test1;test2",
-        &training_list_view_index, training_list_view_active);
+    const int training_list_view_active_new = GuiListViewEx(
+        list_view_bounds, (const char**)training_hidden_layers_info, training_hidden_layers_count,
+        &training_list_view_focus, &training_list_view_index, training_list_view_active);
+
+    if (training_list_view_active_new != -1 && (training_list_view_active_new != training_list_view_active)) {
+        char activation_function[DR_STR_BUFFER_SIZE];
+        dr_application_training_get_hidden_layer(
+            training_list_view_active_new, &training_controller_layer_size, activation_function);
+        if (strcmp(activation_function, DR_APPLICATION_TRAINING_SIGMOID_STR) == 0) {
+            training_controller_dropbox_index = 0;
+        } else if (strcmp(activation_function, DR_APPLICATION_TRAINING_TANH_STR) == 0) {
+            training_controller_dropbox_index = 1;
+        }  else if (strcmp(activation_function, DR_APPLICATION_TRAINING_RELU_STR) == 0) {
+            training_controller_dropbox_index = 2;
+        }
+    }
+    training_list_view_active = training_list_view_active_new;
+
+    const Rectangle list_view_status_bar_bounds = {
+        list_view_bounds.x,
+        list_view_bounds.y - DR_APPLICATION_STATUS_BAR_HEIGHT,
+        list_view_bounds.width,
+        DR_APPLICATION_STATUS_BAR_HEIGHT
+    };
+    GuiStatusBar(list_view_status_bar_bounds, "Hidden layers");
+    char toggle_text[DR_STR_BUFFER_SIZE] = { 0 };
+    sprintf(toggle_text, "%s", "Add");
+    if (layer_selected) {
+        sprintf(toggle_text + TextLength(toggle_text), "%s", "\nRemove");
+    }
+    if (training_hidden_layers_count > 0) {
+        sprintf(toggle_text + TextLength(toggle_text), "%s", "\nClear");
+    }
 
     const Rectangle list_view_controller_toggle_group_bounds = {
         list_view_controller_bounds.x,
@@ -224,7 +308,25 @@ void dr_application_draw_training_tab() {
         list_view_controller_bounds.width,
         list_view_controller_bounds.height / 3
     };
-    GuiToggleGroup(list_view_controller_toggle_group_bounds, "Add\nRemove\nClear", -1);
+    const int list_view_toggle_index = GuiToggleGroup(
+        list_view_controller_toggle_group_bounds, toggle_text, -1);
+
+    if (list_view_toggle_index > -1) {
+        int split_toggle_text_count = 0;
+        const char** split_toggle_text = TextSplit(toggle_text, '\n', &split_toggle_text_count);
+        const char* toggle_text = split_toggle_text[list_view_toggle_index];
+        if (strcmp(toggle_text, "Add") == 0) {
+            dr_application_training_add_hidden_layer();
+        } else if (strcmp(toggle_text, "Remove") == 0) {
+            dr_application_training_remove_hidden_layer(training_list_view_active);
+            if (training_list_view_active >= training_hidden_layers_count) {
+                training_list_view_active = training_hidden_layers_count - 1;
+            }
+        } else if (strcmp(toggle_text, "Clear") == 0) {
+            dr_application_training_clear_hidden_layers();
+            training_list_view_active = -1;
+        }
+    }
 
     const Vector2 layer_controller_element_size = {
         layer_controller_bounds.width - layer_controller_bounds_margin_h,
@@ -237,7 +339,8 @@ void dr_application_draw_training_tab() {
             layer_controller_element_size.x,
             layer_controller_element_size.y
         };
-        GuiSpinner(layer_controller_spinner_bounds, NULL, &training_controller_layer_size, 1, 100, false);
+        const size_t training_controller_layer_size_last = training_controller_layer_size;
+        GuiSpinner(layer_controller_spinner_bounds, NULL, (int*)&training_controller_layer_size, 1, 100, false);
 
         const Rectangle layer_controller_dropbox_bounds = {
             layer_controller_spinner_bounds.x,
@@ -245,9 +348,20 @@ void dr_application_draw_training_tab() {
             layer_controller_element_size.x,
             layer_controller_element_size.y
         };
-        if (GuiDropdownBox(layer_controller_dropbox_bounds, "sigmoid;tanh;ReLU",
+        const char* dropbox_text = DR_APPLICATION_TRAINING_SIGMOID_STR ";" DR_APPLICATION_TRAINING_TANH_STR ";"
+            DR_APPLICATION_TRAINING_RELU_STR;
+        const size_t training_controller_dropbox_index_last = training_controller_dropbox_index;
+        if (GuiDropdownBox(layer_controller_dropbox_bounds, dropbox_text,
             &training_controller_dropbox_index, training_controller_dropbox_edit)) {
             training_controller_dropbox_edit = !training_controller_dropbox_edit;
+        }
+
+        if (training_controller_layer_size_last != training_controller_layer_size ||
+            training_controller_dropbox_index_last != training_controller_dropbox_index) {
+            int count = 0;
+            const char** dropbox_split_text = TextSplit(dropbox_text, ';', &count);
+            dr_application_training_set_hidden_layer(training_list_view_active, training_controller_layer_size,
+                dropbox_split_text[training_controller_dropbox_index]);
         }
     }
 
@@ -265,26 +379,8 @@ void dr_application_draw_training_tab() {
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////// PREDICTION
 void dr_application_draw_prediction_tab() {
-}
-
-void dr_application_update() {
-    window_size = CLITERAL(Vector2){ (float)GetScreenWidth(), (float)GetScreenHeight() };
-
-    switch (current_tab) {
-    case dr_application_tab_dataset:
-        dr_application_update_dataset_tab();
-        break;
-    case dr_application_tab_training:
-        dr_application_update_training_tab();
-        break;
-    case dr_application_tab_prediction:
-        dr_application_update_prediction_tab();
-        break;
-    default:
-        DR_ASSERT_MSG(false, "attempt to call the update function for unknown application tab");
-        break;
-    }
 }
 
 void dr_application_draw() {
@@ -307,13 +403,29 @@ void dr_application_draw() {
     current_tab = GuiToggleGroup(tab_rect, "Dataset;Trainig;Prediction", current_tab);
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////// APPLICATION
 void dr_application_start() {
     while (!WindowShouldClose()) {
-        dr_application_update();
+        window_size = CLITERAL(Vector2){ (float)GetScreenWidth(), (float)GetScreenHeight() };
 
         BeginDrawing();
         ClearBackground(CLITERAL(Color){ 20, 20, 25, 255 });
         dr_application_draw();
         EndDrawing();
     }
+}
+
+void dr_application_create() {
+    InitWindow(DR_APPLICATION_WINDOW_WIDTH, DR_APPLICATION_WINDOW_HEIGHT, DR_APPLICATION_DIGIT_RECOGNIZER_STR);
+    SetTargetFPS(30);
+
+    dataset_canvas_rtexture = LoadRenderTexture(
+        DR_APPLICATION_CANVAS_RESOLUTION_WIDTH, DR_APPLICATION_CANVAS_RESOLUTION_HEIGHT);
+    dr_application_dataset_canvas_clear();
+}
+
+void dr_application_close() {
+    dr_application_dataset_clear();
+    UnloadRenderTexture(dataset_canvas_rtexture);
+    CloseWindow();
 }
