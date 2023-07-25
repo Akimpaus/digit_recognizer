@@ -1,8 +1,6 @@
 #include <application/dr_application.h>
 #include <application/dr_gui.h>
 
-// in dataset_tab i do all logic in the draw function. move logic to the update function.
-
 #define DR_APPLICATION_WINDOW_WIDTH         800
 #define DR_APPLICATION_WINDOW_HEIGHT        600
 #define DR_APPLICATION_DIGIT_RECOGNIZER_STR "Digit recognizer"
@@ -47,9 +45,9 @@ size_t dataset_digits_count[DR_APPLICATION_DIGITS_COUNT]          = { 0 };
 DR_FLOAT_TYPE* dataset_digits_pixels[DR_APPLICATION_DIGITS_COUNT] = { NULL };
 
 // training
-int training_list_view_index  = 0;
-int training_list_view_active = -1;
-int training_list_view_focus  = 0;
+int training_list_view_scroll_index = 0;
+int training_list_view_active       = -1;
+int training_list_view_focus        = 0;
 size_t training_controller_layer_size = 1;
 int training_controller_dropbox_index = 0;
 bool training_controller_dropbox_edit = false;
@@ -57,6 +55,7 @@ int training_hidden_layers_count      = 0;
 char** training_hidden_layers_info    = NULL;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////// DATASET
+
 void dr_application_dataset_add_digit(const size_t digit) {
     DR_ASSERT_MSG(digit >= 0 && digit <= 9, "attempt to add a not correct digit to application dataset");
     const size_t old_digits_count     = dataset_digits_count[digit];
@@ -154,6 +153,7 @@ void dr_application_draw_dataset_tab() {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////// TRAINING
+
 void dr_application_training_add_hidden_layer() {
     training_hidden_layers_info =
         (char**)DR_REALLOC(training_hidden_layers_info, sizeof(char*) * (training_hidden_layers_count + 1));
@@ -217,6 +217,144 @@ void dr_application_training_clear_hidden_layers() {
     training_hidden_layers_count = 0;
 }
 
+void dr_application_draw_training_tab_list_view(const Rectangle list_view_bounds, const bool removed) {
+    const int training_list_view_active_new = GuiListViewEx(
+        list_view_bounds, (const char**)training_hidden_layers_info, training_hidden_layers_count,
+        &training_list_view_focus, &training_list_view_scroll_index, training_list_view_active);
+
+    if (training_list_view_active_new != -1 &&
+        ((training_list_view_active_new != training_list_view_active) || removed)) {
+        char activation_function[DR_STR_BUFFER_SIZE];
+        dr_application_training_get_hidden_layer(
+            training_list_view_active_new, &training_controller_layer_size, activation_function);
+        if (strcmp(activation_function, DR_APPLICATION_TRAINING_SIGMOID_STR) == 0) {
+            training_controller_dropbox_index = 0;
+        } else if (strcmp(activation_function, DR_APPLICATION_TRAINING_TANH_STR) == 0) {
+            training_controller_dropbox_index = 1;
+        }  else if (strcmp(activation_function, DR_APPLICATION_TRAINING_RELU_STR) == 0) {
+            training_controller_dropbox_index = 2;
+        } else {
+            DR_ASSERT_MSG(false, "unknown activation function in apllication");
+        }
+    }
+    training_list_view_active = training_list_view_active_new;
+
+    const Rectangle list_view_status_bar_bounds = {
+        list_view_bounds.x,
+        list_view_bounds.y - DR_APPLICATION_STATUS_BAR_HEIGHT,
+        list_view_bounds.width,
+        DR_APPLICATION_STATUS_BAR_HEIGHT
+    };
+    GuiStatusBar(list_view_status_bar_bounds, "Hidden layers");
+}
+
+void dr_application_draw_training_tab_list_view_controllers(
+    const Rectangle hidden_layers_bounds, const Rectangle list_view_bounds, const bool layer_selected, bool* removed) {
+    char toggle_text[DR_STR_BUFFER_SIZE] = { 0 };
+    sprintf(toggle_text, "%s", "Add");
+    if (layer_selected) {
+        sprintf(toggle_text + TextLength(toggle_text), "%s", "\nRemove");
+    }
+    if (training_hidden_layers_count > 0) {
+        sprintf(toggle_text + TextLength(toggle_text), "%s", "\nClear");
+    }
+
+    const Rectangle list_view_controller_bounds = {
+        list_view_bounds.x,
+        list_view_bounds.y + list_view_bounds.height,
+        list_view_bounds.width,
+        (hidden_layers_bounds.y + hidden_layers_bounds.height) - (list_view_bounds.y + list_view_bounds.height)
+    };
+    const Rectangle list_view_controller_toggle_group_bounds = {
+        list_view_controller_bounds.x,
+        list_view_controller_bounds.y,
+        list_view_controller_bounds.width,
+        list_view_controller_bounds.height / 3
+    };
+    const int list_view_toggle_index = GuiToggleGroup(
+        list_view_controller_toggle_group_bounds, toggle_text, -1);
+
+    if (list_view_toggle_index <= -1) {
+        return;
+    }
+
+    int split_toggle_text_count = 0;
+    const char** split_toggle_text = TextSplit(toggle_text, '\n', &split_toggle_text_count);
+    const char* clicked_toggle_text = split_toggle_text[list_view_toggle_index];
+    if (strcmp(clicked_toggle_text, "Add") == 0) {
+        dr_application_training_add_hidden_layer();
+    } else if (strcmp(clicked_toggle_text, "Remove") == 0) {
+        dr_application_training_remove_hidden_layer(training_list_view_active);
+        if (training_list_view_active >= training_hidden_layers_count) {
+            training_list_view_active = training_hidden_layers_count - 1;
+        }
+        if (training_list_view_scroll_index > 0) {
+            --training_list_view_scroll_index;
+        }
+        *removed = true;
+    } else if (strcmp(clicked_toggle_text, "Clear") == 0) {
+        dr_application_training_clear_hidden_layers();
+        training_list_view_active = -1;
+    }
+}
+
+Vector2 dr_application_draw_training_tab_hidden_layer_controllers(const Rectangle hidden_layers_bounds,
+    const Rectangle list_view_bounds, const bool layer_selected) {
+    const float layer_controller_bounds_margin_h = 5;
+    const Vector2 layer_controller_bounds_size = {
+        hidden_layers_bounds.width - list_view_bounds.width - layer_controller_bounds_margin_h,
+        hidden_layers_bounds.height / 6
+    };
+    const Rectangle layer_controller_bounds = {
+        hidden_layers_bounds.x + hidden_layers_bounds.width - layer_controller_bounds_size.x +
+            layer_controller_bounds_margin_h,
+        hidden_layers_bounds.y + hidden_layers_bounds.height / 2 - layer_controller_bounds_size.y / 2,
+        layer_controller_bounds_size.x,
+        layer_controller_bounds_size.y
+    };
+    const Vector2 layer_controller_element_size = {
+        layer_controller_bounds.width - layer_controller_bounds_margin_h,
+        layer_controller_bounds.height / 2
+    };
+
+    if (!layer_selected) {
+        return layer_controller_element_size;
+    }
+
+    const Rectangle layer_controller_spinner_bounds = {
+        layer_controller_bounds.x,
+        layer_controller_bounds.y,
+        layer_controller_element_size.x,
+        layer_controller_element_size.y
+    };
+    const size_t training_controller_layer_size_last = training_controller_layer_size;
+    GuiSpinner(layer_controller_spinner_bounds, NULL, (int*)&training_controller_layer_size, 1, 100, false);
+
+    const Rectangle layer_controller_dropbox_bounds = {
+        layer_controller_spinner_bounds.x,
+        layer_controller_spinner_bounds.y + layer_controller_spinner_bounds.height,
+        layer_controller_element_size.x,
+        layer_controller_element_size.y
+    };
+    const char* dropbox_text = DR_APPLICATION_TRAINING_SIGMOID_STR ";" DR_APPLICATION_TRAINING_TANH_STR ";"
+        DR_APPLICATION_TRAINING_RELU_STR;
+    const size_t training_controller_dropbox_index_last = training_controller_dropbox_index;
+    if (GuiDropdownBox(layer_controller_dropbox_bounds, dropbox_text,
+        &training_controller_dropbox_index, training_controller_dropbox_edit)) {
+        training_controller_dropbox_edit = !training_controller_dropbox_edit;
+    }
+
+    if (training_controller_layer_size_last != training_controller_layer_size ||
+        training_controller_dropbox_index_last != training_controller_dropbox_index) {
+        int count = 0;
+        const char** dropbox_split_text = TextSplit(dropbox_text, ';', &count);
+        dr_application_training_set_hidden_layer(training_list_view_active, training_controller_layer_size,
+            dropbox_split_text[training_controller_dropbox_index]);
+    }
+
+    return layer_controller_element_size;
+}
+
 void dr_application_draw_training_tab() {
     Rectangle work_area = {
         0,
@@ -248,122 +386,12 @@ void dr_application_draw_training_tab() {
         list_view_bounds_size.y
     };
 
-    const Rectangle list_view_controller_bounds = {
-        list_view_bounds.x,
-        list_view_bounds.y + list_view_bounds.height,
-        list_view_bounds.width,
-        (hidden_layers_bounds.y + hidden_layers_bounds.height) - (list_view_bounds.y + list_view_bounds.height)
-    };
-
-    const float layer_controller_bounds_margin_h = 5;
-    const Vector2 layer_controller_bounds_size = {
-        hidden_layers_bounds.width - list_view_bounds.width - layer_controller_bounds_margin_h,
-        hidden_layers_bounds.height / 6
-    };
-    const Rectangle layer_controller_bounds = {
-        hidden_layers_bounds.x + hidden_layers_bounds.width - layer_controller_bounds_size.x +
-            layer_controller_bounds_margin_h,
-        hidden_layers_bounds.y + hidden_layers_bounds.height / 2 - layer_controller_bounds_size.y / 2,
-        layer_controller_bounds_size.x,
-        layer_controller_bounds_size.y
-    };
-
-    const int training_list_view_active_new = GuiListViewEx(
-        list_view_bounds, (const char**)training_hidden_layers_info, training_hidden_layers_count,
-        &training_list_view_focus, &training_list_view_index, training_list_view_active);
-
-    if (training_list_view_active_new != -1 && (training_list_view_active_new != training_list_view_active)) {
-        char activation_function[DR_STR_BUFFER_SIZE];
-        dr_application_training_get_hidden_layer(
-            training_list_view_active_new, &training_controller_layer_size, activation_function);
-        if (strcmp(activation_function, DR_APPLICATION_TRAINING_SIGMOID_STR) == 0) {
-            training_controller_dropbox_index = 0;
-        } else if (strcmp(activation_function, DR_APPLICATION_TRAINING_TANH_STR) == 0) {
-            training_controller_dropbox_index = 1;
-        }  else if (strcmp(activation_function, DR_APPLICATION_TRAINING_RELU_STR) == 0) {
-            training_controller_dropbox_index = 2;
-        }
-    }
-    training_list_view_active = training_list_view_active_new;
-
-    const Rectangle list_view_status_bar_bounds = {
-        list_view_bounds.x,
-        list_view_bounds.y - DR_APPLICATION_STATUS_BAR_HEIGHT,
-        list_view_bounds.width,
-        DR_APPLICATION_STATUS_BAR_HEIGHT
-    };
-    GuiStatusBar(list_view_status_bar_bounds, "Hidden layers");
-    char toggle_text[DR_STR_BUFFER_SIZE] = { 0 };
-    sprintf(toggle_text, "%s", "Add");
-    if (layer_selected) {
-        sprintf(toggle_text + TextLength(toggle_text), "%s", "\nRemove");
-    }
-    if (training_hidden_layers_count > 0) {
-        sprintf(toggle_text + TextLength(toggle_text), "%s", "\nClear");
-    }
-
-    const Rectangle list_view_controller_toggle_group_bounds = {
-        list_view_controller_bounds.x,
-        list_view_controller_bounds.y,
-        list_view_controller_bounds.width,
-        list_view_controller_bounds.height / 3
-    };
-    const int list_view_toggle_index = GuiToggleGroup(
-        list_view_controller_toggle_group_bounds, toggle_text, -1);
-
-    if (list_view_toggle_index > -1) {
-        int split_toggle_text_count = 0;
-        const char** split_toggle_text = TextSplit(toggle_text, '\n', &split_toggle_text_count);
-        const char* toggle_text = split_toggle_text[list_view_toggle_index];
-        if (strcmp(toggle_text, "Add") == 0) {
-            dr_application_training_add_hidden_layer();
-        } else if (strcmp(toggle_text, "Remove") == 0) {
-            dr_application_training_remove_hidden_layer(training_list_view_active);
-            if (training_list_view_active >= training_hidden_layers_count) {
-                training_list_view_active = training_hidden_layers_count - 1;
-            }
-        } else if (strcmp(toggle_text, "Clear") == 0) {
-            dr_application_training_clear_hidden_layers();
-            training_list_view_active = -1;
-        }
-    }
-
-    const Vector2 layer_controller_element_size = {
-        layer_controller_bounds.width - layer_controller_bounds_margin_h,
-        layer_controller_bounds.height / 2
-    };
-    if (layer_selected) {
-        const Rectangle layer_controller_spinner_bounds = {
-            layer_controller_bounds.x,
-            layer_controller_bounds.y,
-            layer_controller_element_size.x,
-            layer_controller_element_size.y
-        };
-        const size_t training_controller_layer_size_last = training_controller_layer_size;
-        GuiSpinner(layer_controller_spinner_bounds, NULL, (int*)&training_controller_layer_size, 1, 100, false);
-
-        const Rectangle layer_controller_dropbox_bounds = {
-            layer_controller_spinner_bounds.x,
-            layer_controller_spinner_bounds.y + layer_controller_spinner_bounds.height,
-            layer_controller_element_size.x,
-            layer_controller_element_size.y
-        };
-        const char* dropbox_text = DR_APPLICATION_TRAINING_SIGMOID_STR ";" DR_APPLICATION_TRAINING_TANH_STR ";"
-            DR_APPLICATION_TRAINING_RELU_STR;
-        const size_t training_controller_dropbox_index_last = training_controller_dropbox_index;
-        if (GuiDropdownBox(layer_controller_dropbox_bounds, dropbox_text,
-            &training_controller_dropbox_index, training_controller_dropbox_edit)) {
-            training_controller_dropbox_edit = !training_controller_dropbox_edit;
-        }
-
-        if (training_controller_layer_size_last != training_controller_layer_size ||
-            training_controller_dropbox_index_last != training_controller_dropbox_index) {
-            int count = 0;
-            const char** dropbox_split_text = TextSplit(dropbox_text, ';', &count);
-            dr_application_training_set_hidden_layer(training_list_view_active, training_controller_layer_size,
-                dropbox_split_text[training_controller_dropbox_index]);
-        }
-    }
+    bool removed = false;
+    dr_application_draw_training_tab_list_view_controllers(
+        hidden_layers_bounds, list_view_bounds, layer_selected, &removed);
+    dr_application_draw_training_tab_list_view(list_view_bounds, removed);
+    const Vector2 layer_controller_element_size = dr_application_draw_training_tab_hidden_layer_controllers(
+        hidden_layers_bounds, list_view_bounds, layer_selected);
 
     const float dist_to_bottom =
         (work_area.y + work_area.height) - (hidden_layers_bounds.y + hidden_layers_bounds.height);
@@ -380,6 +408,7 @@ void dr_application_draw_training_tab() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////// PREDICTION
+
 void dr_application_draw_prediction_tab() {
 }
 
@@ -404,6 +433,7 @@ void dr_application_draw() {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////// APPLICATION
+
 void dr_application_start() {
     while (!WindowShouldClose()) {
         window_size = CLITERAL(Vector2){ (float)GetScreenWidth(), (float)GetScreenHeight() };
