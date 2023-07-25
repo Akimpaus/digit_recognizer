@@ -1,5 +1,6 @@
 #include <application/dr_application.h>
 #include <application/dr_gui.h>
+#include <limits.h>
 
 #define DR_APPLICATION_WINDOW_WIDTH         800
 #define DR_APPLICATION_WINDOW_HEIGHT        600
@@ -53,6 +54,8 @@ int training_controller_dropbox_index = 0;
 bool training_controller_dropbox_edit = false;
 int training_hidden_layers_count      = 0;
 char** training_hidden_layers_info    = NULL;
+size_t training_epochs              = 0;
+bool training_epochs_value_box_edit = false;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////// DATASET
 
@@ -298,8 +301,12 @@ void dr_application_draw_training_tab_list_view_controllers(
     }
 }
 
-Vector2 dr_application_draw_training_tab_hidden_layer_controllers(const Rectangle hidden_layers_bounds,
+void dr_application_draw_training_tab_hidden_layer_controllers(const Rectangle hidden_layers_bounds,
     const Rectangle list_view_bounds, const bool layer_selected) {
+    if (!layer_selected) {
+        return;
+    }
+
     const float layer_controller_bounds_margin_h = 5;
     const Vector2 layer_controller_bounds_size = {
         hidden_layers_bounds.width - list_view_bounds.width - layer_controller_bounds_margin_h,
@@ -316,10 +323,6 @@ Vector2 dr_application_draw_training_tab_hidden_layer_controllers(const Rectangl
         layer_controller_bounds.width - layer_controller_bounds_margin_h,
         layer_controller_bounds.height / 2
     };
-
-    if (!layer_selected) {
-        return layer_controller_element_size;
-    }
 
     const Rectangle layer_controller_spinner_bounds = {
         layer_controller_bounds.x,
@@ -352,7 +355,7 @@ Vector2 dr_application_draw_training_tab_hidden_layer_controllers(const Rectangl
             dropbox_split_text[training_controller_dropbox_index]);
     }
 
-    return layer_controller_element_size;
+    return;
 }
 
 void dr_application_draw_training_tab() {
@@ -366,7 +369,7 @@ void dr_application_draw_training_tab() {
 
     const Vector2 hidden_layers_bounds_size = {
         work_area.width / 2,
-        work_area.height / 1.6
+        work_area.height / 2
     };
     const Rectangle hidden_layers_bounds = {
         work_area.x + work_area.width / 2 - hidden_layers_bounds_size.x / 2,
@@ -390,18 +393,43 @@ void dr_application_draw_training_tab() {
     dr_application_draw_training_tab_list_view_controllers(
         hidden_layers_bounds, list_view_bounds, layer_selected, &removed);
     dr_application_draw_training_tab_list_view(list_view_bounds, removed);
-    const Vector2 layer_controller_element_size = dr_application_draw_training_tab_hidden_layer_controllers(
-        hidden_layers_bounds, list_view_bounds, layer_selected);
+    dr_application_draw_training_tab_hidden_layer_controllers(hidden_layers_bounds, list_view_bounds, layer_selected);
 
     const float dist_to_bottom =
         (work_area.y + work_area.height) - (hidden_layers_bounds.y + hidden_layers_bounds.height);
-    const Rectangle train_button_bounds = {
-        hidden_layers_bounds.x + hidden_layers_bounds.width / 2 - layer_controller_element_size.x / 2,
-        (hidden_layers_bounds.y + hidden_layers_bounds.height) +
-            dist_to_bottom / 2 - layer_controller_element_size.y / 2,
-        layer_controller_element_size.x,
-        layer_controller_element_size.y
+
+    const Vector2 train_preset_bounds_size = {
+        hidden_layers_bounds.width / 2,
+        dist_to_bottom / 2
     };
+    const Rectangle train_preset_bounds = {
+        hidden_layers_bounds.x + hidden_layers_bounds.width / 2 - hidden_layers_bounds.width / 4,
+        (hidden_layers_bounds.y + hidden_layers_bounds.height) + dist_to_bottom / 2 - train_preset_bounds_size.y / 2,
+        train_preset_bounds_size.x,
+        train_preset_bounds_size.y
+    };
+
+    const Vector2 train_preset_element_size = {
+        train_preset_bounds.width,
+        train_preset_bounds.height / 4
+    };
+    const Rectangle epochs_value_box_bounds = {
+        train_preset_bounds.x + train_preset_bounds.width / 2 - train_preset_element_size.x / 2,
+        train_preset_bounds.y + train_preset_bounds.height / 2 - train_preset_element_size.y,
+        train_preset_element_size.x,
+        train_preset_element_size.y
+    };
+    const Rectangle train_button_bounds = {
+        epochs_value_box_bounds.x,
+        epochs_value_box_bounds.y + epochs_value_box_bounds.height,
+        train_preset_element_size.x,
+        train_preset_element_size.y
+    };
+
+    if (GuiValueBox(
+        epochs_value_box_bounds, "Epochs", (int*)&training_epochs, 1, INT_MAX, training_epochs_value_box_edit)) {
+        training_epochs_value_box_edit = !training_epochs_value_box_edit;
+    }
     if (GuiButton(train_button_bounds, "Train")) {
         printf("train\n");
     }
