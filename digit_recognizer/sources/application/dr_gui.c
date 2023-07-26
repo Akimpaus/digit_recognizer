@@ -2,6 +2,10 @@
 #define RAYGUI_IMPLEMENTATION
 #include <raygui.h>
 
+void dr_gui_dim(const Rectangle bounds) {
+    DrawRectangleRec(bounds, CLITERAL(Color){ 0, 0, 0, 100 });
+}
+
 Vector2 dr_gui_canvas(const Rectangle bounds, const float button_clear_height, RenderTexture2D target,
     const Color draw_color, const Color erase_color, Vector2 last_point) {
     SetMouseOffset(-bounds.x, -bounds.y);
@@ -82,18 +86,18 @@ int dr_gui_numeric_buttons_row(const Rectangle bounds, const size_t count, const
             clicked = i;
         }
 
-
         const char* label_text = TextFormat("%d", values[i]);
         const Font label_text_font       = GetFontDefault();
         const float label_text_font_size = 10;
         const float label_text_spacing   = 0;
-        const Vector2 measure_label_text =
-            MeasureTextEx(label_text_font, label_text, label_text_font_size, label_text_spacing);
+        const Vector2 measure_label_text = MeasureTextEx(
+            label_text_font, label_text, label_text_font_size, label_text_spacing);
         const Vector2 label_text_position = {
             button_bounds.x + button_bounds.width / 2 - measure_label_text.x / 2,
             button_bounds.y + button_bounds.height + measure_label_text.y / 2
         };
-        DrawTextEx(label_text_font, label_text, label_text_position, label_text_font_size, label_text_spacing, LIGHTGRAY);
+        DrawTextEx(
+            label_text_font, label_text, label_text_position, label_text_font_size, label_text_spacing, LIGHTGRAY);
     }
 
     return clicked;
