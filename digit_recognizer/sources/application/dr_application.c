@@ -6,14 +6,15 @@
 // POSIX
 #include <pthread.h>
 
-#define DR_APPLICATION_WINDOW_WIDTH         800
-#define DR_APPLICATION_WINDOW_HEIGHT        600
-#define DR_APPLICATION_DIGIT_RECOGNIZER_STR "Digit recognizer"
-#define DR_APPLICATION_TAB_COUNT            3
-#define DR_APPLICATION_TAB_HEIGHT           40
-#define DR_APPLICATION_TAB_BOTTOM           DR_APPLICATION_TAB_HEIGHT
-#define DR_APPLICATION_STATUS_BAR_HEIGHT    20
-#define DR_APPLICATION_DIGITS_COUNT         10
+#define DR_APPLICATION_WINDOW_WIDTH          800
+#define DR_APPLICATION_WINDOW_HEIGHT         600
+#define DR_APPLICATION_DIGIT_RECOGNIZER_STR  "Digit recognizer"
+#define DR_APPLICATION_TAB_COUNT             3
+#define DR_APPLICATION_TAB_HEIGHT            40
+#define DR_APPLICATION_TAB_BOTTOM            DR_APPLICATION_TAB_HEIGHT
+#define DR_APPLICATION_STATUS_BAR_HEIGHT     20
+#define DR_APPLICATION_DIGITS_COUNT          10
+#define DR_APPLICATION_TEXT_FORMAT_PRECISION "%.4f"
 
 #define DR_APPLICATION_CANVAS_RESOLUTION_WIDTH    30
 #define DR_APPLICATION_CANVAS_RESOLUTION_HEIGHT   30
@@ -38,7 +39,7 @@ typedef enum {
 } dr_application_tab;
 
 // general
-Vector2 window_size              = { 0 };
+Vector2 window_size              = { DR_APPLICATION_WINDOW_WIDTH, DR_APPLICATION_WINDOW_HEIGHT };
 dr_application_tab current_tab   = dr_application_tab_dataset;
 dr_neural_network neural_network = { 0 };
 
@@ -62,15 +63,16 @@ bool training_controller_dropbox_edit = false;
 size_t training_hidden_layers_count   = 0;
 char** training_hidden_layers_info    = NULL;
 DR_FLOAT_TYPE training_learning_rate  = 0.01;
-size_t training_epochs              = 100000;
 size_t training_current_epoch       = 0;
+size_t training_epochs              = 100000;
 bool training_epochs_value_box_edit = false;
-bool training_process_active        = false;
-bool training_procces_finished      = false;
-bool training_proccess_cancelled    = false;
-DR_FLOAT_TYPE training_error        = 0;
+bool training_unsuccessful_attempt_to_start_training = false;
+bool training_process_active     = false;
+bool training_procces_finished   = false;
+bool training_proccess_cancelled = false;
+DR_FLOAT_TYPE training_error          = 0;
 size_t training_current_dataset_index = 0;
-pthread_t training_thread_id = { 0 };
+pthread_t training_thread_id          = { 0 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////// DATASET
 
@@ -89,7 +91,7 @@ void dr_application_dataset_add_digit(const size_t digit) {
     for (size_t y = DR_APPLICATION_CANVAS_RESOLUTION_HEIGHT; y > 0; --y) {
         for (size_t x = 0; x < DR_APPLICATION_CANVAS_RESOLUTION_WIDTH; ++x) {
             const Color pixel_color = GetImageColor(dataset_canvas_image, x, y - 1);
-            *new_pixels = (float)(pixel_color.r + pixel_color.g + pixel_color.b) / (255.0f * 3.0f);
+            *new_pixels = (float)(pixel_color.r + pixel_color.g + pixel_color.b) / (255 * 3);
             ++new_pixels;
         }
     }
@@ -321,14 +323,16 @@ void dr_application_train_neural_network_current_data() {
         dataset_digits_pixels + training_current_dataset_index * DR_APPLICATION_CANVAS_PIXELS_COUNT);
     dr_neural_network_forward_propagation(neural_network);
     dr_neural_network_get_output(neural_network, real_output);
+    DR_FLOAT_TYPE error_sum = 0;
     for (size_t i = 0; i < DR_APPLICATION_DIGITS_COUNT; ++i) {
         error[i] = expected_output[i] - real_output[i];
+        error_sum += error[i];
     }
+    training_error = error_sum;
     dr_neural_network_back_propagation(neural_network, training_learning_rate, error);
 }
 
 void* dr_application_train_neural_network_other_thread(void*) {
-    printf("start thread\n");
     while (training_process_active && training_current_epoch < training_epochs) {
         if (training_current_dataset_index >= dataset_digits_count_all) {
             training_current_dataset_index = 0;
@@ -341,7 +345,6 @@ void* dr_application_train_neural_network_other_thread(void*) {
     training_procces_finished = true;
     training_current_dataset_index = 0;
     training_current_epoch = 0;
-    printf("end thread\n");
     return NULL;
 }
 
@@ -423,7 +426,7 @@ void dr_application_training_tab_hidden_layers_list_view_controllers(
     const char* clicked_toggle_text = split_toggle_text[list_view_toggle_index];
     if (strcmp(clicked_toggle_text, "Add") == 0) {
         dr_application_training_add_hidden_layer(
-            DR_APPLICATION_CANVAS_PIXELS_COUNT, DR_APPLICATION_TRAINING_SIGMOID_STR);
+            DR_APPLICATION_CANVAS_PIXELS_COUNT / 3, DR_APPLICATION_TRAINING_SIGMOID_STR);
     } else if (strcmp(clicked_toggle_text, "Remove") == 0) {
         dr_application_training_remove_hidden_layer(training_list_view_active);
         if (training_list_view_active >= training_hidden_layers_count) {
@@ -554,11 +557,20 @@ void dr_application_training_tab_hidden_layers(const Rectangle work_area) {
         train_preset_bounds.width,
         train_preset_bounds.height / 4
     };
+    const float train_preset_height = train_preset_element_size.y * 3;
 
-    // value box
-    const Rectangle epochs_value_box_bounds = {
+    // slider learning rate
+    const Rectangle learning_rate_slider_bounds = {
         train_preset_bounds.x + train_preset_bounds.width / 2 - train_preset_element_size.x / 2,
-        train_preset_bounds.y + train_preset_bounds.height / 2 - train_preset_element_size.y,
+        train_preset_bounds.y + train_preset_bounds.height / 2 - train_preset_height / 2,
+        train_preset_element_size.x,
+        train_preset_element_size.y
+    };
+
+    // value box epochs
+    const Rectangle epochs_value_box_bounds = {
+        learning_rate_slider_bounds.x,
+        learning_rate_slider_bounds.y + learning_rate_slider_bounds.height,
         train_preset_element_size.x,
         train_preset_element_size.y
     };
@@ -579,11 +591,24 @@ void dr_application_training_tab_hidden_layers(const Rectangle work_area) {
     dr_application_training_tab_hidden_layers_list_view_item_controllers(
         hidden_layers_bounds, list_view_bounds, layer_selected);
 
-    if (GuiValueBox(
-        epochs_value_box_bounds, "Epochs ", (int*)&training_epochs, 1, INT_MAX, training_epochs_value_box_edit)) {
+    const float min_learning_rate = 0;
+    const float max_learning_rate = 0.3;
+    char slider_left_text[DR_STR_BUFFER_SIZE]  = { 0 };
+    TextCopy(slider_left_text, TextFormat(
+        "%s: "DR_APPLICATION_TEXT_FORMAT_PRECISION, "Learning rate", training_learning_rate));
+    const char* slider_right_text = TextFormat(DR_APPLICATION_TEXT_FORMAT_PRECISION, max_learning_rate);
+    training_learning_rate = GuiSlider(learning_rate_slider_bounds, slider_left_text, slider_right_text,
+        training_learning_rate, min_learning_rate, max_learning_rate);
+    if (GuiValueBox(epochs_value_box_bounds, "Epochs ",
+        (int*)&training_epochs, 1, INT_MAX, training_epochs_value_box_edit)) {
         training_epochs_value_box_edit = !training_epochs_value_box_edit;
     }
-    if (GuiButton(train_button_bounds, "Train")) {
+    if (GuiButton(train_button_bounds, "Train")) { // edited
+        if (dataset_digits_count_all == 0) {
+            training_unsuccessful_attempt_to_start_training = true;
+            return;
+        }
+
         training_process_active = true;
         if (dr_neural_network_valid(neural_network)) {
             dr_neural_network_free(&neural_network);
@@ -657,14 +682,14 @@ void dr_application_training_tab_training_process(const Rectangle work_area) {
 
     // gui
     const int window_box_res    = GuiWindowBox(window_box_bounds, "Neural network training process");
-    const int cancel_button_res = GuiButton(cancel_button_bounds, "Cancel");
+    const int cancel_button_res = GuiButton(cancel_button_bounds, "Stop");
     if (cancel_button_res || window_box_res) {
         training_process_active = false;
         training_proccess_cancelled = true;
         return;
     }
 
-    GuiLabel(label_error_bounds, TextFormat("%s: %.3f", "Error", training_error));
+    GuiLabel(label_error_bounds, TextFormat("%s: "DR_APPLICATION_TEXT_FORMAT_PRECISION, "Error", training_error));
 
     training_current_epoch = GuiProgressBar(
         progress_bar_bounds, TextFormat("%zu ", training_current_epoch), TextFormat(" %zu", training_epochs),
@@ -680,33 +705,34 @@ void dr_application_training_tab() {
         window_size.y - DR_APPLICATION_TAB_BOTTOM
     };
 
-    // message box cancelled
-    const Vector2 message_box_cancelled_size = {
+    // message box
+    const Vector2 message_box_size = {
         work_area.width / 2,
         work_area.height / 4
     };
-    const Rectangle message_box_cancelled_bounds = {
-        work_area.x + work_area.width / 2 - message_box_cancelled_size.x / 2,
-        work_area.y + work_area.height / 2 - message_box_cancelled_size.y / 2,
-        message_box_cancelled_size.x,
-        message_box_cancelled_size.y
-    };
-
-    // message box success
-    const Vector2 message_box_success_size = {
-        work_area.width / 2,
-        work_area.height / 4
-    };
-    const Rectangle message_box_success_bounds = {
-        work_area.x + work_area.width / 2 - message_box_success_size.x / 2,
-        work_area.y + work_area.height / 2 - message_box_success_size.y / 2,
-        message_box_success_size.x,
-        message_box_success_size.y
+    const Rectangle message_box_bounds = {
+        work_area.x + work_area.width / 2 - message_box_size.x / 2,
+        work_area.y + work_area.height / 2 - message_box_size.y / 2,
+        message_box_size.x,
+        message_box_size.y
     };
 
     // gui
     dr_application_training_tab_hidden_layers(work_area);
 
+    if (training_unsuccessful_attempt_to_start_training) {
+        GuiUnlock();
+        dr_gui_dim(work_area);
+        const char* message = "To train the neural network, add an image of digits to the dataset.";
+        const int message_box_result = GuiMessageBox(message_box_bounds, "Empty dataset", message, "Ok");
+        if (message_box_result == 0 || message_box_result == 1) {
+            training_unsuccessful_attempt_to_start_training = false;
+        } else {
+            GuiLock();
+        }
+        return;
+    }
+    
     if (training_process_active) {
         GuiUnlock();
         dr_gui_dim(work_area);
@@ -715,10 +741,10 @@ void dr_application_training_tab() {
     } else if (training_proccess_cancelled) {
         GuiUnlock();
         dr_gui_dim(work_area);
-        const char* message = TextFormat("Neural network training cancelled with an error: %.3f ", training_error);
-        const int message_box_cancelled_result = GuiMessageBox(
-            message_box_cancelled_bounds, "Cancelled", message, "Ok");
-        if (message_box_cancelled_result == 0 || message_box_cancelled_result == 1) {
+        const char* message = TextFormat(
+            "Neural network training stopped with a last error: "DR_APPLICATION_TEXT_FORMAT_PRECISION, training_error);
+        const int message_box_result = GuiMessageBox(message_box_bounds, "Stopped", message, "Ok");
+        if (message_box_result == 0 || message_box_result == 1) {
             training_proccess_cancelled = false;
             training_procces_finished   = false;
         } else {
@@ -727,10 +753,10 @@ void dr_application_training_tab() {
     } else if (training_procces_finished) {
         GuiUnlock();
         dr_gui_dim(work_area);
-        const char* message = TextFormat(
-            "The neural network has been successfully trained with an error: %.3f ", training_error);
-        const int message_box_success_result = GuiMessageBox(message_box_success_bounds, "Success", message, "Ok");
-        if (message_box_success_result >= 0) {
+        const char* message = TextFormat("The neural network has been successfully trained with a last error: "
+            DR_APPLICATION_TEXT_FORMAT_PRECISION, training_error);
+        const int message_box_result = GuiMessageBox(message_box_bounds, "Success", message, "Ok");
+        if (message_box_result >= 0) {
             training_procces_finished = false;
         } else {
             GuiLock();
@@ -777,6 +803,8 @@ void dr_application_start() {
 }
 
 void dr_application_create() {
+    srand(time(NULL));
+
     InitWindow(DR_APPLICATION_WINDOW_WIDTH, DR_APPLICATION_WINDOW_HEIGHT, DR_APPLICATION_DIGIT_RECOGNIZER_STR);
     SetTargetFPS(30);
 
@@ -784,11 +812,8 @@ void dr_application_create() {
         DR_APPLICATION_CANVAS_RESOLUTION_WIDTH, DR_APPLICATION_CANVAS_RESOLUTION_HEIGHT);
     dr_application_dataset_canvas_clear();
 
-    dr_application_training_add_hidden_layer(DR_APPLICATION_CANVAS_PIXELS_COUNT, DR_APPLICATION_TRAINING_SIGMOID_STR);
-    for (size_t i = 2; i <= 8; i += 2) {
     dr_application_training_add_hidden_layer(
-        DR_APPLICATION_CANVAS_PIXELS_COUNT / i, DR_APPLICATION_TRAINING_SIGMOID_STR);
-    }
+        DR_APPLICATION_CANVAS_PIXELS_COUNT / 1.5, DR_APPLICATION_TRAINING_SIGMOID_STR);
 }
 
 void dr_application_close() {

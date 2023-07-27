@@ -1,6 +1,7 @@
 #include <application/dr_gui.h>
 #define RAYGUI_IMPLEMENTATION
 #include <raygui.h>
+#include <ctype.h>
 
 void dr_gui_dim(const Rectangle bounds) {
     DrawRectangleRec(bounds, CLITERAL(Color){ 0, 0, 0, 100 });
