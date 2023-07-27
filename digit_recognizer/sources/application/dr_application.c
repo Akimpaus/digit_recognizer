@@ -70,6 +70,7 @@ bool training_unsuccessful_attempt_to_start_training = false;
 bool training_process_active     = false;
 bool training_procces_finished   = false;
 bool training_proccess_cancelled = false;
+bool training_neural_network_updated  = false;
 DR_FLOAT_TYPE training_error          = 0;
 size_t training_current_dataset_index = 0;
 pthread_t training_thread_id          = { 0 };
@@ -333,6 +334,7 @@ void dr_application_train_neural_network_current_data() {
 }
 
 void* dr_application_train_neural_network_other_thread(void*) {
+    training_error = 0;
     while (training_process_active && training_current_epoch < training_epochs) {
         if (training_current_dataset_index >= dataset_digits_count_all) {
             training_current_dataset_index = 0;
@@ -427,6 +429,7 @@ void dr_application_training_tab_hidden_layers_list_view_controllers(
     if (strcmp(clicked_toggle_text, "Add") == 0) {
         dr_application_training_add_hidden_layer(
             DR_APPLICATION_CANVAS_PIXELS_COUNT / 3, DR_APPLICATION_TRAINING_SIGMOID_STR);
+        training_neural_network_updated = true;
     } else if (strcmp(clicked_toggle_text, "Remove") == 0) {
         dr_application_training_remove_hidden_layer(training_list_view_active);
         if (training_list_view_active >= training_hidden_layers_count) {
@@ -436,9 +439,11 @@ void dr_application_training_tab_hidden_layers_list_view_controllers(
             --training_list_view_scroll_index;
         }
         *removed = true;
+        training_neural_network_updated = true;
     } else if (strcmp(clicked_toggle_text, "Clear") == 0) {
         dr_application_training_hidden_layers_info_clear();
         training_list_view_active = -1;
+        training_neural_network_updated = true;
     }
 }
 
@@ -505,6 +510,7 @@ void dr_application_training_tab_hidden_layers_list_view_item_controllers(const 
         const char** dropbox_split_text = TextSplit(dropbox_text, ';', &count);
         dr_application_training_set_hidden_layer(training_list_view_active, training_controller_layer_size,
             dropbox_split_text[training_controller_dropbox_index]);
+        training_neural_network_updated = true;
     }
 
     return;
@@ -610,10 +616,13 @@ void dr_application_training_tab_hidden_layers(const Rectangle work_area) {
         }
 
         training_process_active = true;
-        if (dr_neural_network_valid(neural_network)) {
+        if (neural_network.layers_count == 0) {
+            dr_application_neural_network_create();
+        } else if (training_neural_network_updated) {
             dr_neural_network_free(&neural_network);
+            dr_application_neural_network_create();
+            training_neural_network_updated = false;
         }
-        dr_application_neural_network_create();
         dr_application_start_train_neural_network_other_thread();
     }
 }
@@ -685,6 +694,7 @@ void dr_application_training_tab_training_process(const Rectangle work_area) {
     const int cancel_button_res = GuiButton(cancel_button_bounds, "Stop");
     if (cancel_button_res || window_box_res) {
         training_process_active = false;
+        pthread_join(training_thread_id, NULL);
         training_proccess_cancelled = true;
         return;
     }
@@ -723,7 +733,7 @@ void dr_application_training_tab() {
     if (training_unsuccessful_attempt_to_start_training) {
         GuiUnlock();
         dr_gui_dim(work_area);
-        const char* message = "To train the neural network, add an image of digits to the dataset.";
+        const char* message = "To train the neural network, add an image of digit to the dataset.";
         const int message_box_result = GuiMessageBox(message_box_bounds, "Empty dataset", message, "Ok");
         if (message_box_result == 0 || message_box_result == 1) {
             training_unsuccessful_attempt_to_start_training = false;
