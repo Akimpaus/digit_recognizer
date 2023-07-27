@@ -1,6 +1,10 @@
 #include <application/dr_application.h>
 #include <application/dr_gui.h>
+#include <neural_network/dr_neural_network.h>
 #include <limits.h>
+
+// POSIX
+#include <pthread.h>
 
 #define DR_APPLICATION_WINDOW_WIDTH         800
 #define DR_APPLICATION_WINDOW_HEIGHT        600
@@ -34,45 +38,54 @@ typedef enum {
 } dr_application_tab;
 
 // general
-Vector2 window_size            = { 0 };
-dr_application_tab current_tab = dr_application_tab_dataset;
+Vector2 window_size              = { 0 };
+dr_application_tab current_tab   = dr_application_tab_dataset;
+dr_neural_network neural_network = { 0 };
 
 // dataset
 RenderTexture2D dataset_canvas_rtexture = { 0 };
 Vector2 dataset_canvas_last_point       = { -1 };
-char dataset_status_bar_str_buffer[DR_STR_BUFFER_SIZE]            = DR_APPLICATION_DIGIT_RECOGNIZER_STR;
-size_t dataset_digits_count_all                                   = 0;
-size_t dataset_digits_count[DR_APPLICATION_DIGITS_COUNT]          = { 0 };
-DR_FLOAT_TYPE* dataset_digits_pixels[DR_APPLICATION_DIGITS_COUNT] = { NULL };
+char dataset_status_bar_str_buffer[DR_STR_BUFFER_SIZE]   = DR_APPLICATION_DIGIT_RECOGNIZER_STR;
+size_t dataset_digits_count_all                          = 0;
+size_t dataset_digits_count[DR_APPLICATION_DIGITS_COUNT] = { 0 };
+DR_FLOAT_TYPE* dataset_digits_pixels                     = NULL;
+size_t* dataset_digits_results                           = NULL;
 
 // training
 int training_list_view_scroll_index = 0;
 int training_list_view_active       = -1;
 int training_list_view_focus        = 0;
-size_t training_controller_layer_size = 1;
+size_t training_controller_layer_size    = 1;
+bool training_controller_layer_size_edit = false;
 int training_controller_dropbox_index = 0;
 bool training_controller_dropbox_edit = false;
-int training_hidden_layers_count      = 0;
+size_t training_hidden_layers_count   = 0;
 char** training_hidden_layers_info    = NULL;
-size_t training_epochs              = 0;
+DR_FLOAT_TYPE training_learning_rate  = 0.01;
+size_t training_epochs              = 100000;
 size_t training_current_epoch       = 0;
 bool training_epochs_value_box_edit = false;
 bool training_process_active        = false;
+bool training_procces_finished      = false;
 bool training_proccess_cancelled    = false;
 DR_FLOAT_TYPE training_error        = 0;
+size_t training_current_dataset_index = 0;
+pthread_t training_thread_id = { 0 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////// DATASET
 
 void dr_application_dataset_add_digit(const size_t digit) {
-    DR_ASSERT_MSG(digit >= 0 && digit <= 9, "attempt to add a not correct digit to application dataset");
-    const size_t old_digits_count     = dataset_digits_count[digit];
-    const size_t new_digits_count     = old_digits_count + 1;
-    DR_FLOAT_TYPE* reallocated_pixels = (DR_FLOAT_TYPE*)DR_REALLOC(dataset_digits_pixels[digit],
-        sizeof(DR_FLOAT_TYPE) * new_digits_count * DR_APPLICATION_CANVAS_PIXELS_COUNT);
-    DR_ASSERT_MSG(reallocated_pixels, "new_pixels allocate error for application dataset");
+    DR_ASSERT_MSG(digit >= 0 && digit <= 9, "attempt to add a not correct digit to the application dataset");
+
+    const size_t new_digits_count = dataset_digits_count_all + 1;
+    DR_FLOAT_TYPE* reallocated_pixels = (DR_FLOAT_TYPE*)DR_REALLOC(
+        dataset_digits_pixels, sizeof(DR_FLOAT_TYPE) * new_digits_count * DR_APPLICATION_CANVAS_PIXELS_COUNT);
+    DR_ASSERT_MSG(reallocated_pixels, "new pixels reallocate error for the application dataset");
+    size_t* reallocated_results = (size_t*)DR_REALLOC(dataset_digits_results, sizeof(size_t) * new_digits_count);
+    DR_ASSERT_MSG(reallocated_results, "results reallocate error for the application dataset");
 
     Image dataset_canvas_image = LoadImageFromTexture(dataset_canvas_rtexture.texture);
-    DR_FLOAT_TYPE* new_pixels = reallocated_pixels + old_digits_count * DR_APPLICATION_CANVAS_PIXELS_COUNT;
+    DR_FLOAT_TYPE* new_pixels = reallocated_pixels + dataset_digits_count_all * DR_APPLICATION_CANVAS_PIXELS_COUNT;
     for (size_t y = DR_APPLICATION_CANVAS_RESOLUTION_HEIGHT; y > 0; --y) {
         for (size_t x = 0; x < DR_APPLICATION_CANVAS_RESOLUTION_WIDTH; ++x) {
             const Color pixel_color = GetImageColor(dataset_canvas_image, x, y - 1);
@@ -81,20 +94,26 @@ void dr_application_dataset_add_digit(const size_t digit) {
         }
     }
 
+    reallocated_results[new_digits_count - 1] = digit;
+    dataset_digits_results   = reallocated_results;
+    dataset_digits_count_all = new_digits_count;
+    dataset_digits_pixels    = reallocated_pixels;
+    ++dataset_digits_count[digit];
     UnloadImage(dataset_canvas_image);
-    dataset_digits_count[digit]  = new_digits_count;
-    dataset_digits_pixels[digit] = reallocated_pixels;
-    ++dataset_digits_count_all;
 }
 
 void dr_application_dataset_clear() {
-    for (size_t i = 0; i < DR_APPLICATION_DIGITS_COUNT; ++i) {
-        if (dataset_digits_count[i] > 0) {
-            DR_FREE(dataset_digits_pixels[i]);
-            dataset_digits_pixels[i] = NULL;
-            dataset_digits_count[i]  = 0;
-        }
+    if (dataset_digits_count_all == 0) {
+        return;
     }
+
+    for (size_t i = 0; i < DR_APPLICATION_DIGITS_COUNT; ++i) {
+        dataset_digits_count[i] = 0;
+    }
+    DR_FREE(dataset_digits_pixels);
+    dataset_digits_pixels = NULL;
+    DR_FREE(dataset_digits_results);
+    dataset_digits_results = NULL;
     dataset_digits_count_all = 0;
 }
 
@@ -172,7 +191,7 @@ void dr_application_dataset_tab() {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////// TRAINING
 
-void dr_application_training_add_hidden_layer() {
+void dr_application_training_add_hidden_layer(const size_t layer_size, const char* activation_function) {
     training_hidden_layers_info =
         (char**)DR_REALLOC(training_hidden_layers_info, sizeof(char*) * (training_hidden_layers_count + 1));
     DR_ASSERT_MSG(training_hidden_layers_info, "application hidden layers info realloc error");
@@ -181,7 +200,7 @@ void dr_application_training_add_hidden_layer() {
     DR_ASSERT_MSG(training_hidden_layers_info[training_hidden_layers_count],
         "application hidden layers info alloc error");
 
-    sprintf(training_hidden_layers_info[training_hidden_layers_count], "%s", "10 " DR_APPLICATION_TRAINING_SIGMOID_STR);
+    sprintf(training_hidden_layers_info[training_hidden_layers_count], "%zu %s", layer_size, activation_function);
     ++training_hidden_layers_count;
 }
 
@@ -225,7 +244,11 @@ void dr_application_training_get_hidden_layer(const size_t layer_index, size_t* 
     sscanf(training_hidden_layers_info[layer_index], "%zu %s", layer_size, activation_function);
 }
 
-void dr_application_training_clear_hidden_layers() {
+void dr_application_training_hidden_layers_info_clear() {
+    if (training_hidden_layers_count == 0) {
+        return;
+    }
+
     for (size_t i = 0; i < training_hidden_layers_count; ++i) {
         DR_FREE(training_hidden_layers_info[i]);
         training_hidden_layers_info[i] = NULL;
@@ -233,6 +256,99 @@ void dr_application_training_clear_hidden_layers() {
     DR_FREE(training_hidden_layers_info);
     training_hidden_layers_info = NULL;
     training_hidden_layers_count = 0;
+}
+
+void dr_application_neural_network_create() {
+    const size_t layers_count = training_hidden_layers_count + 2;
+    const size_t activation_functions_count = layers_count - 1;
+
+    size_t* layers_sizes = (size_t*)DR_MALLOC(sizeof(size_t) * layers_count);
+    DR_ASSERT_MSG(layers_sizes, "application neural network layers sizes alloc error");
+    dr_activation_function* activation_functions =
+        (dr_activation_function*)DR_MALLOC(sizeof(dr_activation_function) * activation_functions_count);
+    DR_ASSERT_MSG(activation_functions, "application neural network activation functions alloc error");
+    dr_activation_function* activation_function_derivatives =
+        (dr_activation_function*)DR_MALLOC(sizeof(dr_activation_function) * activation_functions_count);
+    DR_ASSERT_MSG(activation_function_derivatives,
+        "application neural network activation functions derivatives alloc error");
+
+    layers_sizes[0] = DR_APPLICATION_CANVAS_PIXELS_COUNT;
+    layers_sizes[layers_count - 1] = DR_APPLICATION_DIGITS_COUNT;
+    activation_functions[activation_functions_count - 1] = dr_sigmoid;
+    activation_function_derivatives[activation_functions_count - 1] = dr_sigmoid_derivative;
+
+    for (size_t i = 1; i < layers_count - 1; ++i) {
+        size_t curr_layer_size = 0;
+        char curr_activation_function_str[DR_STR_BUFFER_SIZE] = { 0 };
+        sscanf(training_hidden_layers_info[i - 1], "%zu %s", &curr_layer_size, curr_activation_function_str);
+
+        layers_sizes[i] = curr_layer_size;
+
+        const size_t prev_i = i - 1;
+        dr_activation_function* curr_activation_function = activation_functions + prev_i;
+        dr_activation_function* curr_activation_function_derivatives = activation_function_derivatives + prev_i;
+        if (strcmp(curr_activation_function_str, DR_APPLICATION_TRAINING_SIGMOID_STR) == 0) {
+            *curr_activation_function = dr_sigmoid;
+            *curr_activation_function_derivatives = dr_sigmoid_derivative;
+        } else if (strcmp(curr_activation_function_str, DR_APPLICATION_TRAINING_TANH_STR) == 0) {
+            *curr_activation_function = dr_tanh;
+            *curr_activation_function_derivatives = dr_tanh_derivative;
+        }  else if (strcmp(curr_activation_function_str, DR_APPLICATION_TRAINING_RELU_STR) == 0) {
+            *curr_activation_function = dr_relu;
+            *curr_activation_function_derivatives = dr_relu_derivative;
+        } else {
+            DR_ASSERT_MSG(false, "unknown activation function in application");
+        }
+    }
+
+    neural_network = dr_neural_network_create(
+        layers_sizes, layers_count, activation_functions, activation_function_derivatives);
+
+    DR_FREE(layers_sizes);
+    DR_FREE(activation_functions);
+    DR_FREE(activation_function_derivatives);
+}
+
+void dr_application_train_neural_network_current_data() {
+    DR_ASSERT_MSG(training_current_dataset_index >= 0 && training_current_dataset_index < dataset_digits_count_all,
+        "dataset index to train out of range the dataset in the application");
+
+    DR_FLOAT_TYPE real_output[DR_APPLICATION_DIGITS_COUNT]     = { 0 };
+    DR_FLOAT_TYPE expected_output[DR_APPLICATION_DIGITS_COUNT] = { 0 };
+    DR_FLOAT_TYPE error[DR_APPLICATION_DIGITS_COUNT]           = { 0 };
+    expected_output[dataset_digits_results[training_current_dataset_index]] = 1;
+    dr_neural_network_set_input(neural_network,
+        dataset_digits_pixels + training_current_dataset_index * DR_APPLICATION_CANVAS_PIXELS_COUNT);
+    dr_neural_network_forward_propagation(neural_network);
+    dr_neural_network_get_output(neural_network, real_output);
+    for (size_t i = 0; i < DR_APPLICATION_DIGITS_COUNT; ++i) {
+        error[i] = expected_output[i] - real_output[i];
+    }
+    dr_neural_network_back_propagation(neural_network, training_learning_rate, error);
+}
+
+void* dr_application_train_neural_network_other_thread(void*) {
+    printf("start thread\n");
+    while (training_process_active && training_current_epoch < training_epochs) {
+        if (training_current_dataset_index >= dataset_digits_count_all) {
+            training_current_dataset_index = 0;
+            ++training_current_epoch;
+        }
+        dr_application_train_neural_network_current_data();
+        ++training_current_dataset_index;
+    }
+    training_process_active   = false;
+    training_procces_finished = true;
+    training_current_dataset_index = 0;
+    training_current_epoch = 0;
+    printf("end thread\n");
+    return NULL;
+}
+
+void dr_application_start_train_neural_network_other_thread() {
+    const int result = pthread_create(
+        &training_thread_id, NULL, dr_application_train_neural_network_other_thread, NULL);
+    DR_ASSERT_MSG(result == 0, "error creating a thread for training a neural network in application");
 }
 
 void dr_application_training_tab_hidden_layers_list_view(const Rectangle list_view_bounds, const bool removed) {
@@ -261,7 +377,7 @@ void dr_application_training_tab_hidden_layers_list_view(const Rectangle list_vi
         }  else if (strcmp(activation_function, DR_APPLICATION_TRAINING_RELU_STR) == 0) {
             training_controller_dropbox_index = 2;
         } else {
-            DR_ASSERT_MSG(false, "unknown activation function in apllication");
+            DR_ASSERT_MSG(false, "unknown activation function in application");
         }
     }
     training_list_view_active = training_list_view_active_new;
@@ -306,7 +422,8 @@ void dr_application_training_tab_hidden_layers_list_view_controllers(
     const char** split_toggle_text = TextSplit(toggle_text, '\n', &split_toggle_text_count);
     const char* clicked_toggle_text = split_toggle_text[list_view_toggle_index];
     if (strcmp(clicked_toggle_text, "Add") == 0) {
-        dr_application_training_add_hidden_layer();
+        dr_application_training_add_hidden_layer(
+            DR_APPLICATION_CANVAS_PIXELS_COUNT, DR_APPLICATION_TRAINING_SIGMOID_STR);
     } else if (strcmp(clicked_toggle_text, "Remove") == 0) {
         dr_application_training_remove_hidden_layer(training_list_view_active);
         if (training_list_view_active >= training_hidden_layers_count) {
@@ -317,7 +434,7 @@ void dr_application_training_tab_hidden_layers_list_view_controllers(
         }
         *removed = true;
     } else if (strcmp(clicked_toggle_text, "Clear") == 0) {
-        dr_application_training_clear_hidden_layers();
+        dr_application_training_hidden_layers_info_clear();
         training_list_view_active = -1;
     }
 }
@@ -366,7 +483,10 @@ void dr_application_training_tab_hidden_layers_list_view_item_controllers(const 
     };
 
     // gui
-    GuiSpinner(layer_controller_spinner_bounds, NULL, (int*)&training_controller_layer_size, 1, 100, false);
+    if (GuiSpinner(layer_controller_spinner_bounds, NULL,
+        (int*)&training_controller_layer_size, 1, INT_MAX, training_controller_layer_size_edit)) {
+        training_controller_layer_size_edit = !training_controller_layer_size_edit;
+    }
 
     const char* dropbox_text = DR_APPLICATION_TRAINING_SIGMOID_STR ";" DR_APPLICATION_TRAINING_TANH_STR ";"
         DR_APPLICATION_TRAINING_RELU_STR;
@@ -465,6 +585,11 @@ void dr_application_training_tab_hidden_layers(const Rectangle work_area) {
     }
     if (GuiButton(train_button_bounds, "Train")) {
         training_process_active = true;
+        if (dr_neural_network_valid(neural_network)) {
+            dr_neural_network_free(&neural_network);
+        }
+        dr_application_neural_network_create();
+        dr_application_start_train_neural_network_other_thread();
     }
 }
 
@@ -531,7 +656,9 @@ void dr_application_training_tab_training_process(const Rectangle work_area) {
     };
 
     // gui
-    if (GuiWindowBox(window_box_bounds, "Neural network training process")) {
+    const int window_box_res    = GuiWindowBox(window_box_bounds, "Neural network training process");
+    const int cancel_button_res = GuiButton(cancel_button_bounds, "Cancel");
+    if (cancel_button_res || window_box_res) {
         training_process_active = false;
         training_proccess_cancelled = true;
         return;
@@ -542,12 +669,6 @@ void dr_application_training_tab_training_process(const Rectangle work_area) {
     training_current_epoch = GuiProgressBar(
         progress_bar_bounds, TextFormat("%zu ", training_current_epoch), TextFormat(" %zu", training_epochs),
         training_current_epoch, 0, training_epochs);
-
-    if (GuiButton(cancel_button_bounds, "Cancel")) {
-        training_process_active = false;
-        training_proccess_cancelled = true;
-        return;
-    }
 }
 
 void dr_application_training_tab() {
@@ -559,16 +680,28 @@ void dr_application_training_tab() {
         window_size.y - DR_APPLICATION_TAB_BOTTOM
     };
 
-    // message box
-    const Vector2 message_box_size = {
-        work_area.width / 2.5,
+    // message box cancelled
+    const Vector2 message_box_cancelled_size = {
+        work_area.width / 2,
         work_area.height / 4
     };
-    const Rectangle message_box_bounds = {
-        work_area.x + work_area.width / 2 - message_box_size.x / 2,
-        work_area.y + work_area.height / 2 - message_box_size.y / 2,
-        message_box_size.x,
-        message_box_size.y
+    const Rectangle message_box_cancelled_bounds = {
+        work_area.x + work_area.width / 2 - message_box_cancelled_size.x / 2,
+        work_area.y + work_area.height / 2 - message_box_cancelled_size.y / 2,
+        message_box_cancelled_size.x,
+        message_box_cancelled_size.y
+    };
+
+    // message box success
+    const Vector2 message_box_success_size = {
+        work_area.width / 2,
+        work_area.height / 4
+    };
+    const Rectangle message_box_success_bounds = {
+        work_area.x + work_area.width / 2 - message_box_success_size.x / 2,
+        work_area.y + work_area.height / 2 - message_box_success_size.y / 2,
+        message_box_success_size.x,
+        message_box_success_size.y
     };
 
     // gui
@@ -583,10 +716,22 @@ void dr_application_training_tab() {
         GuiUnlock();
         dr_gui_dim(work_area);
         const char* message = TextFormat("Neural network training cancelled with an error: %.3f ", training_error);
-        const int message_box_result = GuiMessageBox(message_box_bounds, "Cancelled", message, "Ok");
-
-        if (message_box_result == 0 || message_box_result == 1) {
+        const int message_box_cancelled_result = GuiMessageBox(
+            message_box_cancelled_bounds, "Cancelled", message, "Ok");
+        if (message_box_cancelled_result == 0 || message_box_cancelled_result == 1) {
             training_proccess_cancelled = false;
+            training_procces_finished   = false;
+        } else {
+            GuiLock();
+        }
+    } else if (training_procces_finished) {
+        GuiUnlock();
+        dr_gui_dim(work_area);
+        const char* message = TextFormat(
+            "The neural network has been successfully trained with an error: %.3f ", training_error);
+        const int message_box_success_result = GuiMessageBox(message_box_success_bounds, "Success", message, "Ok");
+        if (message_box_success_result >= 0) {
+            training_procces_finished = false;
         } else {
             GuiLock();
         }
@@ -638,10 +783,29 @@ void dr_application_create() {
     dataset_canvas_rtexture = LoadRenderTexture(
         DR_APPLICATION_CANVAS_RESOLUTION_WIDTH, DR_APPLICATION_CANVAS_RESOLUTION_HEIGHT);
     dr_application_dataset_canvas_clear();
+
+    dr_application_training_add_hidden_layer(DR_APPLICATION_CANVAS_PIXELS_COUNT, DR_APPLICATION_TRAINING_SIGMOID_STR);
+    for (size_t i = 2; i <= 8; i += 2) {
+    dr_application_training_add_hidden_layer(
+        DR_APPLICATION_CANVAS_PIXELS_COUNT / i, DR_APPLICATION_TRAINING_SIGMOID_STR);
+    }
 }
 
 void dr_application_close() {
+    // training
+    if (training_process_active) {
+        training_process_active = false;
+        pthread_join(training_thread_id, NULL);
+    }
+    dr_application_training_hidden_layers_info_clear();
+    if (dr_neural_network_valid(neural_network)) {
+        dr_neural_network_free(&neural_network);
+    }
+
+    // dataset
     dr_application_dataset_clear();
     UnloadRenderTexture(dataset_canvas_rtexture);
+
+    // raylib window
     CloseWindow();
 }
