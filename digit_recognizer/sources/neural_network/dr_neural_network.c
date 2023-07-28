@@ -389,37 +389,34 @@ void dr_neural_network_train(
 }
 
 void dr_neural_network_unchecked_prediction_write(
-    const dr_neural_network neural_network, const DR_FLOAT_TYPE* input, dr_matrix prediction) {
+    const dr_neural_network neural_network, const DR_FLOAT_TYPE* input, DR_FLOAT_TYPE* prediction) {
     dr_neural_network_unchecked_set_input(neural_network, input);
     dr_neural_network_unchecked_forward_propagation(neural_network);
     const dr_matrix output_layer = neural_network.layers[neural_network.layers_count - 1];
     const size_t output_size     = output_layer.width * output_layer.height;
     for (size_t i = 0; i < output_size; ++i) {
-        prediction.elements[i] = output_layer.elements[i];
+        prediction[i] = output_layer.elements[i];
     }
 }
 
 void dr_neural_network_prediction_write(
-    const dr_neural_network neural_network, const DR_FLOAT_TYPE* input, dr_matrix prediction) {
+    const dr_neural_network neural_network, const DR_FLOAT_TYPE* input, DR_FLOAT_TYPE* prediction) {
     DR_ASSERT_MSG(dr_neural_network_valid(neural_network),
         "attempt to write a prediction with a not valid neural network");
     DR_ASSERT_MSG(input, "attempt to write a neural network prediction with a NULL input");
-    DR_ASSERT_MSG(prediction.elements,
-        "attempt to write a neural network prediction to a NULL matrix");
-    DR_ASSERT_MSG(prediction.width == 1 && prediction.height == dr_neural_network_unchecked_output_size(neural_network),
-        "attempt to write a neural network prediction to a matrix with wrong size");
+    DR_ASSERT_MSG(prediction, "attempt to write a neural network prediction to a NULL array");
     dr_neural_network_unchecked_prediction_write(neural_network, input, prediction);
 }
 
-dr_matrix dr_neural_network_unchecked_prediction_create(
+DR_FLOAT_TYPE* dr_neural_network_unchecked_prediction_create(
     const dr_neural_network neural_network, const DR_FLOAT_TYPE* input) {
     const size_t output_size = dr_neural_network_output_size(neural_network);
-    dr_matrix prediction = dr_matrix_alloc(1, output_size);
+    DR_FLOAT_TYPE* prediction = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE) * output_size);
     dr_neural_network_unchecked_prediction_write(neural_network, input, prediction);
     return prediction;
 }
 
-dr_matrix dr_neural_network_prediction_create(const dr_neural_network neural_network, const DR_FLOAT_TYPE* input) {
+DR_FLOAT_TYPE* dr_neural_network_prediction_create(const dr_neural_network neural_network, const DR_FLOAT_TYPE* input) {
     DR_ASSERT_MSG(dr_neural_network_valid(neural_network),
         "attempt to create a prediction with a not valid neural network");
     DR_ASSERT_MSG(input, "attempt to create a neural network prediction with a NULL input");

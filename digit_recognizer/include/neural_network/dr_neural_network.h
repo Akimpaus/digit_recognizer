@@ -100,15 +100,15 @@ void dr_neural_network_train(
     const DR_FLOAT_TYPE** train_inputs, const DR_FLOAT_TYPE** train_outputs, const size_t train_count);
 
 void dr_neural_network_unchecked_prediction_write(
-    const dr_neural_network neural_network, const DR_FLOAT_TYPE* input, dr_matrix prediction);
+    const dr_neural_network neural_network, const DR_FLOAT_TYPE* input, DR_FLOAT_TYPE* prediction);
 
 void dr_neural_network_prediction_write(
-    const dr_neural_network neural_network, const DR_FLOAT_TYPE* input, dr_matrix prediction);
+    const dr_neural_network neural_network, const DR_FLOAT_TYPE* input, DR_FLOAT_TYPE* prediction);
 
-dr_matrix dr_neural_network_unchecked_prediction_create(
+DR_FLOAT_TYPE* dr_neural_network_unchecked_prediction_create(
     const dr_neural_network neural_network, const DR_FLOAT_TYPE* input);
 
-dr_matrix dr_neural_network_prediction_create(const dr_neural_network neural_network, const DR_FLOAT_TYPE* input);
+DR_FLOAT_TYPE* dr_neural_network_prediction_create(const dr_neural_network neural_network, const DR_FLOAT_TYPE* input);
 
 bool dr_neural_network_save_to_file_custom_activation_function_transformer(const dr_neural_network neural_network,
     const dr_activation_function_to_string_callback activation_function_to_string_callback,

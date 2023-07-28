@@ -64,7 +64,7 @@ size_t training_hidden_layers_count   = 0;
 char** training_hidden_layers_info    = NULL;
 DR_FLOAT_TYPE training_learning_rate  = 0.01;
 size_t training_current_epoch       = 0;
-size_t training_epochs              = 100000;
+size_t training_epochs              = 1000;
 bool training_epochs_value_box_edit = false;
 bool training_unsuccessful_attempt_to_start_training = false;
 bool training_process_active     = false;
@@ -74,6 +74,20 @@ bool training_neural_network_updated  = false;
 DR_FLOAT_TYPE training_error          = 0;
 size_t training_current_dataset_index = 0;
 pthread_t training_thread_id          = { 0 };
+
+// prediction
+RenderTexture2D prediction_canvas_rtexture = { 0 };
+Vector2 prediction_canvas_last_point       = { -1 };
+bool prediction_show_connections = false;
+DR_FLOAT_TYPE prediction_probs[DR_APPLICATION_DIGITS_COUNT] = { 0 };
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////// GENERAL
+
+void dr_application_canvas_clear(RenderTexture2D canvas) {
+    BeginTextureMode(canvas);
+    ClearBackground(DR_APPLICATION_CANVAS_ERASE_COLOR);
+    EndTextureMode();
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////// DATASET
 
@@ -118,12 +132,6 @@ void dr_application_dataset_clear() {
     DR_FREE(dataset_digits_results);
     dataset_digits_results = NULL;
     dataset_digits_count_all = 0;
-}
-
-void dr_application_dataset_canvas_clear() {
-    BeginTextureMode(dataset_canvas_rtexture);
-    ClearBackground(DR_APPLICATION_CANVAS_ERASE_COLOR);
-    EndTextureMode();
 }
 
 void dr_application_dataset_tab() {
@@ -180,7 +188,7 @@ void dr_application_dataset_tab() {
         numeric_buttons_bounds, DR_APPLICATION_DIGITS_COUNT, dataset_digits_count);
     if (clicked >= 0) {
         dr_application_dataset_add_digit(clicked);
-        dr_application_dataset_canvas_clear();
+        dr_application_canvas_clear(dataset_canvas_rtexture);
         sprintf(dataset_status_bar_str_buffer, "%s %d %s", "Digit", clicked, "was added");
     }
 
@@ -329,7 +337,7 @@ void dr_application_train_neural_network_current_data() {
         error[i] = expected_output[i] - real_output[i];
         error_sum += error[i];
     }
-    training_error = error_sum;
+    training_error = fabs(error_sum);
     dr_neural_network_back_propagation(neural_network, training_learning_rate, error);
 }
 
@@ -717,7 +725,7 @@ void dr_application_training_tab() {
 
     // message box
     const Vector2 message_box_size = {
-        work_area.width / 2,
+        work_area.width / 1.6,
         work_area.height / 4
     };
     const Rectangle message_box_bounds = {
@@ -777,6 +785,129 @@ void dr_application_training_tab() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////// PREDICTION
 
 void dr_application_prediction_tab() {
+    // work area
+    const Rectangle work_area = {
+        0,
+        DR_APPLICATION_TAB_BOTTOM,
+        window_size.x,
+        window_size.y - DR_APPLICATION_TAB_BOTTOM
+    };
+
+    // container
+    const Vector2 container_size = {
+        work_area.width / 1.1,
+        DR_APPLICATION_CANVAS_HEIGHT + DR_APPLICATION_CANVAS_CLEAR_BUTTON_HEIGHT * 2
+    };
+    const Rectangle container_bounuds = {
+        work_area.x + work_area.width / 2 - container_size.x / 2,
+        work_area.y + work_area.height / 2 - container_size.y / 2,
+        container_size.x,
+        container_size.y
+    };
+
+    // canvas
+    const Rectangle canvas_bounds = {
+        container_bounuds.x,
+        container_bounuds.y + container_bounuds.height / 2 - DR_APPLICATION_CANVAS_HEIGHT / 2,
+        DR_APPLICATION_CANVAS_WIDTH,
+        DR_APPLICATION_CANVAS_HEIGHT
+    };
+
+    // canvas connection
+    const float canvas_connection_height = canvas_bounds.height / 3;
+    const float canvas_connection_offset = canvas_connection_height / DR_APPLICATION_DIGITS_COUNT;
+    Vector2 canvas_connection_point = {
+        canvas_bounds.x + canvas_bounds.width,
+        canvas_bounds.y + canvas_bounds.height / 2 - canvas_connection_height / 2
+    };
+
+    // button predict
+    const Rectangle button_predict_bounds = {
+        canvas_bounds.x,
+        canvas_bounds.y + canvas_bounds.height + DR_APPLICATION_CANVAS_CLEAR_BUTTON_HEIGHT,
+        canvas_bounds.width,
+        DR_APPLICATION_CANVAS_CLEAR_BUTTON_HEIGHT
+    };
+
+    // result predict bounds
+    const Vector2 result_predict_bounds_size = {
+        container_bounuds.width / 8,
+        container_bounuds.height / 3
+    };
+    const Rectangle result_predict_bounds = {
+        container_bounuds.x + container_bounuds.width - result_predict_bounds_size.x,
+        container_bounuds.y + container_bounuds.height / 2 - result_predict_bounds_size.y / 2,
+        result_predict_bounds_size.x,
+        result_predict_bounds_size.y
+    };
+
+    // result connection
+    const Vector2 result_connection = {
+        result_predict_bounds.x,
+        result_predict_bounds.y + result_predict_bounds.height / 2
+    };
+
+    // circle column
+    const float circle_radius = 20;
+    const float circle_margin = 4;
+    const float circle_column_height = (circle_radius * 2 + circle_margin) * (DR_APPLICATION_DIGITS_COUNT - 1);
+    const float dist_from_canvas_to_result = result_predict_bounds.x - (canvas_bounds.x + canvas_bounds.width);
+    const Vector2 circle_column_pos = {
+        (canvas_bounds.x + canvas_bounds.width) + dist_from_canvas_to_result / 2,
+        container_bounuds.y + container_bounuds.height / 2 - circle_column_height / 2
+    };
+
+    // gui
+    const bool neural_netwrok_trained = neural_network.layers_count > 0;
+
+    prediction_canvas_last_point = dr_gui_canvas(
+        canvas_bounds, DR_APPLICATION_CANVAS_CLEAR_BUTTON_HEIGHT, prediction_canvas_rtexture,
+        DR_APPLICATION_CANVAS_DRAW_COLOR, DR_APPLICATION_CANVAS_ERASE_COLOR, prediction_canvas_last_point);
+
+    for (size_t i = 0; i < DR_APPLICATION_DIGITS_COUNT; ++i) {
+        const Vector2 circle_pos = {
+            circle_column_pos.x,
+            circle_column_pos.y + (circle_radius * 2 + circle_margin) * i
+        };
+
+        if (prediction_show_connections) {
+            // connections: canvas - circles
+            DrawLineEx(canvas_connection_point, circle_pos, 2, LIGHTGRAY);
+            canvas_connection_point.y += canvas_connection_offset;
+            const Vector2 text_prob_size = {
+                30,
+                15
+            };
+            const Rectangle text_prob_bounds = {
+                canvas_connection_point.x + (circle_pos.x - canvas_connection_point.x) / 2 - text_prob_size.x / 2,
+                canvas_connection_point.y + (circle_pos.y - canvas_connection_point.y) / 2 - text_prob_size.y / 2,
+                text_prob_size.x,
+                text_prob_size.y
+            };
+            GuiDummyRec(text_prob_bounds, TextFormat("%.2f", prediction_probs[i]));
+
+            // connection: circles - result
+            DrawLineEx(circle_pos, result_connection, 2, RED);
+        }
+
+        // circles
+        DrawCircleV(circle_pos, circle_radius, BLACK);
+        DrawCircleLines(circle_pos.x, circle_pos.y, circle_radius, GRAY);
+        const char* text_digit = TextFormat("%d", i);
+        const size_t text_digit_font_size = 16;
+        const Vector2 text_digit_size = MeasureTextEx(GetFontDefault(), text_digit, text_digit_font_size, 0);
+        DrawText(text_digit, circle_pos.x - text_digit_size.x / 2,
+            circle_pos.y - text_digit_size.y / 2, text_digit_font_size, GRAY);
+    }
+
+    DrawRectangleRec(result_predict_bounds, BLACK);
+    DrawRectangleLinesEx(result_predict_bounds, 1, GRAY);
+
+    if (GuiButton(button_predict_bounds, "Predict") && neural_netwrok_trained) {
+        prediction_show_connections = true;
+        //dr_neural_network_prediction_write()
+        //dr_neural_network_get_output(neural_network, prediction_probs);
+    }
 }
 
 void dr_application_draw() {
@@ -818,12 +949,25 @@ void dr_application_create() {
     InitWindow(DR_APPLICATION_WINDOW_WIDTH, DR_APPLICATION_WINDOW_HEIGHT, DR_APPLICATION_DIGIT_RECOGNIZER_STR);
     SetTargetFPS(30);
 
+    GuiSetStyle(DEFAULT, TEXT_SPACING, 2);
+
+    // dataset
     dataset_canvas_rtexture = LoadRenderTexture(
         DR_APPLICATION_CANVAS_RESOLUTION_WIDTH, DR_APPLICATION_CANVAS_RESOLUTION_HEIGHT);
-    dr_application_dataset_canvas_clear();
+    dr_application_canvas_clear(dataset_canvas_rtexture);
 
+    // training
     dr_application_training_add_hidden_layer(
         DR_APPLICATION_CANVAS_PIXELS_COUNT / 1.5, DR_APPLICATION_TRAINING_SIGMOID_STR);
+    dr_application_training_add_hidden_layer(
+        DR_APPLICATION_CANVAS_PIXELS_COUNT / 3, DR_APPLICATION_TRAINING_SIGMOID_STR);
+    dr_application_training_add_hidden_layer(
+        DR_APPLICATION_CANVAS_PIXELS_COUNT / 3, DR_APPLICATION_TRAINING_SIGMOID_STR);
+
+    // prediction
+    prediction_canvas_rtexture = LoadRenderTexture(
+        DR_APPLICATION_CANVAS_RESOLUTION_WIDTH, DR_APPLICATION_CANVAS_RESOLUTION_HEIGHT);
+    dr_application_canvas_clear(prediction_canvas_rtexture);
 }
 
 void dr_application_close() {
@@ -840,6 +984,9 @@ void dr_application_close() {
     // dataset
     dr_application_dataset_clear();
     UnloadRenderTexture(dataset_canvas_rtexture);
+
+    // prediction
+    UnloadRenderTexture(prediction_canvas_rtexture);
 
     // raylib window
     CloseWindow();

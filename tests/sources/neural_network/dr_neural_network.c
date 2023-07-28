@@ -744,13 +744,13 @@ UTEST(dr_neural_network, prediction_write) {
 
         DR_FLOAT_TYPE* input = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE));
         input[0]             = 0;
-        dr_matrix prediction = dr_matrix_alloc(1, 1);
+        DR_FLOAT_TYPE* prediction = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE));
         dr_neural_network_prediction_write(nn, input, prediction);
 
-        EXPECT_EQ(prediction.elements[0], 0.5);
+        EXPECT_EQ(prediction[0], 0.5);
 
         dr_neural_network_free(&nn);
-        dr_matrix_free(&prediction);
+        DR_FREE(prediction);
         DR_FREE(input);
     }
 
@@ -769,14 +769,14 @@ UTEST(dr_neural_network, prediction_write) {
         DR_FLOAT_TYPE* input = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE) * 2);
         input[0]             = 1;
         input[1]             = 0.5;
-        dr_matrix prediction = dr_matrix_alloc(1, 2);
+        DR_FLOAT_TYPE* prediction = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE) * 2);
         dr_neural_network_prediction_write(nn, input, prediction);
 
-        EXPECT_NEAR(prediction.elements[0], 0.740775, 0.00001);
-        EXPECT_NEAR(prediction.elements[1], 0.645656, 0.00001);
+        EXPECT_NEAR(prediction[0], 0.740775, 0.00001);
+        EXPECT_NEAR(prediction[1], 0.645656, 0.00001);
 
         dr_neural_network_free(&nn);
-        dr_matrix_free(&prediction);
+        DR_FREE(prediction);
         DR_FREE(input);
     }
 
@@ -806,13 +806,13 @@ UTEST(dr_neural_network, prediction_write) {
         DR_FLOAT_TYPE* input = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE) * 2);
         input[0]             = 1;
         input[1]             = 0.5;
-        dr_matrix prediction = dr_matrix_alloc(1, 1);
+        DR_FLOAT_TYPE* prediction = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE));
         dr_neural_network_prediction_write(nn, input, prediction);
 
-        EXPECT_NEAR(prediction.elements[0], 0.957257, 0.0001);
+        EXPECT_NEAR(prediction[0], 0.957257, 0.0001);
 
         dr_neural_network_free(&nn);
-        dr_matrix_free(&prediction);
+        DR_FREE(prediction);
         DR_FREE(input);
     }
 }
@@ -829,12 +829,12 @@ UTEST(dr_neural_network, prediction_create) {
 
         DR_FLOAT_TYPE* input = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE));
         input[0]             = 0;
-        dr_matrix prediction = dr_neural_network_prediction_create(nn, input);
+        DR_FLOAT_TYPE* prediction = dr_neural_network_prediction_create(nn, input);
 
-        EXPECT_EQ(prediction.elements[0], 0.5);
+        EXPECT_EQ(prediction[0], 0.5);
 
         dr_neural_network_free(&nn);
-        dr_matrix_free(&prediction);
+        DR_FREE(prediction);
         DR_FREE(input);
     }
 
@@ -853,13 +853,13 @@ UTEST(dr_neural_network, prediction_create) {
         DR_FLOAT_TYPE* input = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE) * 2);
         input[0]             = 1;
         input[1]             = 0.5;
-        dr_matrix prediction = dr_neural_network_prediction_create(nn, input);
+        DR_FLOAT_TYPE* prediction = dr_neural_network_prediction_create(nn, input);
 
-        EXPECT_NEAR(prediction.elements[0], 0.740775, 0.00001);
-        EXPECT_NEAR(prediction.elements[1], 0.645656, 0.00001);
+        EXPECT_NEAR(prediction[0], 0.740775, 0.00001);
+        EXPECT_NEAR(prediction[1], 0.645656, 0.00001);
 
         dr_neural_network_free(&nn);
-        dr_matrix_free(&prediction);
+        DR_FREE(prediction);
         DR_FREE(input);
     }
 
@@ -889,12 +889,12 @@ UTEST(dr_neural_network, prediction_create) {
         DR_FLOAT_TYPE* input = (DR_FLOAT_TYPE*)DR_MALLOC(sizeof(DR_FLOAT_TYPE) * 2);
         input[0]             = 1;
         input[1]             = 0.5;
-        dr_matrix prediction = dr_neural_network_prediction_create(nn, input);
+        DR_FLOAT_TYPE* prediction = dr_neural_network_prediction_create(nn, input);
 
-        EXPECT_NEAR(prediction.elements[0], 0.957257, 0.0001);
+        EXPECT_NEAR(prediction[0], 0.957257, 0.0001);
 
         dr_neural_network_free(&nn);
-        dr_matrix_free(&prediction);
+        DR_FREE(prediction);
         DR_FREE(input);
     }
 }
@@ -933,23 +933,23 @@ UTEST(dr_neural_network, train) {
 
     dr_neural_network_train(nn, 0.3, 100,
         (const DR_FLOAT_TYPE**)inputs, (const DR_FLOAT_TYPE**)outputs, train_data_size);
-    dr_matrix prediction_1 = dr_neural_network_prediction_create(nn, inputs[0]);
-    dr_matrix prediction_2 = dr_neural_network_prediction_create(nn, inputs[1]);
-    dr_matrix prediction_3 = dr_neural_network_prediction_create(nn, inputs[2]);
-    dr_matrix prediction_4 = dr_neural_network_prediction_create(nn, inputs[3]);
+    DR_FLOAT_TYPE* prediction_1 = dr_neural_network_prediction_create(nn, inputs[0]);
+    DR_FLOAT_TYPE* prediction_2 = dr_neural_network_prediction_create(nn, inputs[1]);
+    DR_FLOAT_TYPE* prediction_3 = dr_neural_network_prediction_create(nn, inputs[2]);
+    DR_FLOAT_TYPE* prediction_4 = dr_neural_network_prediction_create(nn, inputs[3]);
 
-    EXPECT_NEAR(roundf(prediction_1.elements[0]), 0.0, 0.001);
-    EXPECT_NEAR(roundf(prediction_2.elements[0]), 0.0, 0.001);
-    EXPECT_NEAR(roundf(prediction_3.elements[0]), 1.0, 0.001);
-    EXPECT_NEAR(roundf(prediction_4.elements[0]), 1.0, 0.001);
+    EXPECT_NEAR(roundf(prediction_1[0]), 0.0, 0.001);
+    EXPECT_NEAR(roundf(prediction_2[0]), 0.0, 0.001);
+    EXPECT_NEAR(roundf(prediction_3[0]), 1.0, 0.001);
+    EXPECT_NEAR(roundf(prediction_4[0]), 1.0, 0.001);
 
     dr_neural_network_free(&nn);
     dr_array_2d_float_free(inputs, train_data_size);
     dr_array_2d_float_free(outputs, train_data_size);
-    dr_matrix_free(&prediction_1);
-    dr_matrix_free(&prediction_2);
-    dr_matrix_free(&prediction_3);
-    dr_matrix_free(&prediction_4);
+    DR_FREE(prediction_1);
+    DR_FREE(prediction_2);
+    DR_FREE(prediction_3);
+    DR_FREE(prediction_4);
 }
 
 UTEST(dr_neural_network, dr_default_activation_function_to_string) {
