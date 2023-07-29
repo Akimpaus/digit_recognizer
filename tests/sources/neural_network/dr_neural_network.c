@@ -1210,7 +1210,8 @@ UTEST(dr_neural_network, load_from_file_custom_activation_function_transformer) 
     EXPECT_FALSE(custom_activation_function_derivative_transformer_called);
 
     dr_neural_network_save_to_file(nn, file_path);
-    dr_neural_network_load_from_file_custom_activation_function_transformer(
+    dr_neural_network_free(&nn);
+    nn = dr_neural_network_load_from_file_custom_activation_function_transformer(
         dr_testing_details_activation_function_from_string,
         dr_testing_details_activation_function_derivative_from_string,
         file_path);

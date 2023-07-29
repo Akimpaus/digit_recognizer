@@ -32,7 +32,7 @@ Vector2 dr_gui_canvas(const Rectangle bounds, const float button_clear_height, R
             last_point = mouse_pos_canvas;
         }
         const Color line_color = mouse_left_down ? draw_color : erase_color;
-        DrawLineV(mouse_pos_canvas, last_point, line_color);
+        DrawLineEx(mouse_pos_canvas, last_point, 3, line_color);
         last_point = mouse_pos_canvas;
     } else if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) || IsMouseButtonReleased(MOUSE_BUTTON_RIGHT)) {
         last_point.x = -1;
@@ -90,7 +90,7 @@ int dr_gui_numeric_buttons_row(const Rectangle bounds, const size_t count, const
         const char* label_text = TextFormat("%d", values[i]);
         const Font label_text_font       = GetFontDefault();
         const float label_text_font_size = 10;
-        const float label_text_spacing   = 0;
+        const float label_text_spacing   = GuiGetStyle(DEFAULT, TEXT_SPACING);
         const Vector2 measure_label_text = MeasureTextEx(
             label_text_font, label_text, label_text_font_size, label_text_spacing);
         const Vector2 label_text_position = {

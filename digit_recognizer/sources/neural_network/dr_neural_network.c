@@ -459,6 +459,7 @@ bool dr_neural_network_save_to_file_custom_activation_function_transformer(const
 
         char* activation_function_str = activation_function_to_string_callback(neural_network.activation_functions[i]);
         if (!activation_function_str) {
+            fclose(file);
             return false;
         }
         fprintf(file, "%s\n", activation_function_str);
@@ -467,6 +468,7 @@ bool dr_neural_network_save_to_file_custom_activation_function_transformer(const
         char* activation_function_derivative_str =
             activation_function_derivative_to_string_callback(neural_network.activation_functions_derivatives[i]);
         if (!activation_function_derivative_str) {
+            fclose(file);
             return false;
         }
         fprintf(file, "%s\n", activation_function_derivative_str);
@@ -504,6 +506,7 @@ dr_neural_network dr_neural_network_load_from_file_custom_activation_function_tr
 
     fscanf(file, "%s", str_buffer);
     if (strcmp(str_buffer, DR_NEURAL_NETWORK_BEGIN_STR) != 0) {
+        fclose(file);
         return neural_network;
     }
 
@@ -518,17 +521,16 @@ dr_neural_network dr_neural_network_load_from_file_custom_activation_function_tr
         (dr_activation_function*)DR_MALLOC(sizeof(dr_activation_function) * neural_network.connections_count);
     DR_ASSERT_MSG(neural_network.activation_functions_derivatives,
         "neural network activation functions derivatives alloc error, when loading from file");
-    neural_network.layers      = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * neural_network.layers_count);
+    neural_network.layers = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * neural_network.layers_count);
     DR_ASSERT_MSG(neural_network.layers,
         "neural network layers alloc error, when loading from file");
     neural_network.connections = (dr_matrix*)DR_MALLOC(sizeof(dr_matrix) * neural_network.connections_count);
-    DR_ASSERT_MSG(neural_network.activation_functions,
+    DR_ASSERT_MSG(neural_network.connections,
         "neural network connections alloc error, when loading from file");
 
     size_t input_layer_height = 0;
     fscanf(file, "%zu", &input_layer_height);
     neural_network.layers[0] = dr_matrix_create_filled(1, input_layer_height, 0);
-
 
     for (size_t i = 0; i < neural_network.connections_count; ++i) {
         size_t connection_width  = 0;
@@ -563,12 +565,13 @@ dr_neural_network dr_neural_network_load_from_file_custom_activation_function_tr
     }
 
     fscanf(file, "%s", str_buffer);
+    fclose(file);
+
     if (strcmp(str_buffer, DR_NEURAL_NETWORK_END_STR) != 0) {
         dr_neural_network_free(&neural_network);
         return neural_network;
     }
 
-    fclose(file);
     return neural_network;
 }
 

@@ -1,5 +1,6 @@
 #include <application/dr_application.h>
 #include <application/dr_gui.h>
+#define DR_FLOAT_TYPE float
 #include <neural_network/dr_neural_network.h>
 #include <limits.h>
 
@@ -16,8 +17,9 @@
 #define DR_APPLICATION_DIGITS_COUNT          10
 #define DR_APPLICATION_TEXT_FORMAT_PRECISION "%.4f"
 
-#define DR_APPLICATION_CANVAS_RESOLUTION_WIDTH    5
-#define DR_APPLICATION_CANVAS_RESOLUTION_HEIGHT   5
+#define DR_APPLICATION_MNIST_DATASET_PATH         "dataset.bin"
+#define DR_APPLICATION_CANVAS_RESOLUTION_WIDTH    28
+#define DR_APPLICATION_CANVAS_RESOLUTION_HEIGHT   28
 #define DR_APPLICATION_CANVAS_PIXELS_COUNT        (DR_APPLICATION_CANVAS_RESOLUTION_WIDTH *\
     DR_APPLICATION_CANVAS_RESOLUTION_HEIGHT)
 #define DR_APPLICATION_CANVAS_WIDTH               300
@@ -50,7 +52,7 @@ char dataset_status_bar_str_buffer[DR_STR_BUFFER_SIZE]   = DR_APPLICATION_DIGIT_
 size_t dataset_digits_count_all                          = 0;
 size_t dataset_digits_count[DR_APPLICATION_DIGITS_COUNT] = { 0 };
 DR_FLOAT_TYPE* dataset_digits_pixels                     = NULL;
-size_t* dataset_digits_results                           = NULL;
+unsigned char* dataset_digits_results                    = NULL;
 
 // training
 int training_list_view_scroll_index = 0;
@@ -97,7 +99,7 @@ void dr_application_canvas_get_pixels(const RenderTexture2D canvas, DR_FLOAT_TYP
     for (size_t y = DR_APPLICATION_CANVAS_RESOLUTION_HEIGHT; y > 0; --y) {
         for (size_t x = 0; x < DR_APPLICATION_CANVAS_RESOLUTION_WIDTH; ++x) {
             const Color pixel_color = GetImageColor(canvas_image, x, y - 1);
-            *pixels = (float)(pixel_color.r + pixel_color.g + pixel_color.b) / (255 * 3);
+            *pixels = (float)(pixel_color.r + pixel_color.g + pixel_color.b) / (255 * 3); // make 0 or 1
             ++pixels;
         }
     }
@@ -106,24 +108,74 @@ void dr_application_canvas_get_pixels(const RenderTexture2D canvas, DR_FLOAT_TYP
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////// DATASET
 
-void dr_application_dataset_add_digit(const size_t digit) {
-    DR_ASSERT_MSG(digit >= 0 && digit <= 9, "attempt to add a not correct digit to the application dataset");
+size_t dr_application_dataset_add_memory(const size_t count) {
+    const size_t new_digits_count_all = dataset_digits_count_all + count;
 
-    const size_t new_digits_count = dataset_digits_count_all + 1;
     DR_FLOAT_TYPE* reallocated_pixels = (DR_FLOAT_TYPE*)DR_REALLOC(
-        dataset_digits_pixels, sizeof(DR_FLOAT_TYPE) * new_digits_count * DR_APPLICATION_CANVAS_PIXELS_COUNT);
+        dataset_digits_pixels, sizeof(DR_FLOAT_TYPE) * new_digits_count_all * DR_APPLICATION_CANVAS_PIXELS_COUNT);
     DR_ASSERT_MSG(reallocated_pixels, "new pixels reallocate error for the application dataset");
-    size_t* reallocated_results = (size_t*)DR_REALLOC(dataset_digits_results, sizeof(size_t) * new_digits_count);
+    unsigned char* reallocated_results = (unsigned char*)DR_REALLOC(
+        dataset_digits_results, sizeof(unsigned char) * new_digits_count_all);
     DR_ASSERT_MSG(reallocated_results, "results reallocate error for the application dataset");
 
-    DR_FLOAT_TYPE* new_pixels = reallocated_pixels + dataset_digits_count_all * DR_APPLICATION_CANVAS_PIXELS_COUNT;
-    dr_application_canvas_get_pixels(dataset_canvas_rtexture, new_pixels);
+    dataset_digits_pixels  = reallocated_pixels;
+    dataset_digits_results = reallocated_results;
 
-    reallocated_results[new_digits_count - 1] = digit;
-    dataset_digits_results   = reallocated_results;
-    dataset_digits_count_all = new_digits_count;
-    dataset_digits_pixels    = reallocated_pixels;
+    return new_digits_count_all;
+}
+
+void dr_application_dataset_add_digit(const unsigned char digit) {
+    DR_ASSERT_MSG(digit >= 0 && digit <= 9, "attempt to add a not correct digit to the application dataset");
+    const size_t new_digits_count_all = dr_application_dataset_add_memory(1);
+    DR_FLOAT_TYPE* new_pixels = dataset_digits_pixels + dataset_digits_count_all * DR_APPLICATION_CANVAS_PIXELS_COUNT;
+    dr_application_canvas_get_pixels(dataset_canvas_rtexture, new_pixels);
+    dataset_digits_count_all = new_digits_count_all;
+    dataset_digits_results[dataset_digits_count_all - 1] = digit;
     ++dataset_digits_count[digit];
+}
+
+bool dr_application_dataset_load_mnist(const size_t count) {
+    FILE* file = fopen(DR_APPLICATION_MNIST_DATASET_PATH, "rb");
+    if (!file) {
+        return false;
+    }
+
+    int32_t header[3] = { 0 };
+    fread(header, sizeof(header), 1, file);
+
+    if (header[1] != DR_APPLICATION_CANVAS_RESOLUTION_HEIGHT ||
+        header[2] != DR_APPLICATION_CANVAS_RESOLUTION_WIDTH) {
+        printf("Mismatch application canvas resolution and MNSIT images resolution\n");
+        return false;
+    }
+    DR_ASSERT_MSG(count <= header[0], "Attempt to upload more MNIST images than there are");
+
+    const size_t new_digits_count_all = dr_application_dataset_add_memory(count);
+    DR_FLOAT_TYPE* new_pixels  = dataset_digits_pixels + dataset_digits_count_all * DR_APPLICATION_CANVAS_PIXELS_COUNT;
+    unsigned char* new_results = dataset_digits_results + dataset_digits_count_all; 
+
+    const size_t pixels_count_total = count * DR_APPLICATION_CANVAS_PIXELS_COUNT;
+    const DR_FLOAT_TYPE* new_pixels_end = new_pixels + pixels_count_total;
+    for (; new_pixels != new_pixels_end; ++new_pixels) {
+        unsigned char pixel = 0;
+        fread(&pixel, sizeof(unsigned char), 1, file);
+        *new_pixels = (float)pixel;
+    }
+
+    fseek(file, sizeof(header) + sizeof(unsigned char) * header[0] * DR_APPLICATION_CANVAS_PIXELS_COUNT, SEEK_SET);
+
+    const unsigned char* new_results_end = new_results + count;
+    for (; new_results != new_results_end; ++new_results) {
+        unsigned char digit = 0;
+        fread(&digit, sizeof(unsigned char), 1, file);
+        *new_results = digit;
+        ++dataset_digits_count[digit];
+    }
+
+    dataset_digits_count_all = new_digits_count_all;
+
+    fclose(file);
+    return true;
 }
 
 void dr_application_dataset_clear() {
@@ -173,17 +225,28 @@ void dr_application_dataset_tab() {
     const Rectangle status_bar_rect = {
         0,
         window_size.y - DR_APPLICATION_STATUS_BAR_HEIGHT,
-        window_size.x / (dataset_empty ? 1 : 1.2),
+        window_size.x,
         DR_APPLICATION_STATUS_BAR_HEIGHT
+    };
+    const Vector2 status_bar_buttons_size = {
+        status_bar_rect.width / 5,
+        status_bar_rect.height
+    };
+
+    // load MNIST button
+    const Rectangle load_mnist_button_bounds = {
+        status_bar_rect.x + status_bar_rect.width - status_bar_buttons_size.x,
+        status_bar_rect.y,
+        status_bar_buttons_size.x,
+        status_bar_buttons_size.y
     };
 
     // clear dataset button
-    const float clear_dataset_button_rect_offset = 1;
     const Rectangle clear_dataset_button_rect = {
-        status_bar_rect.x + status_bar_rect.width + clear_dataset_button_rect_offset,
+        load_mnist_button_bounds.x - status_bar_buttons_size.x,
         status_bar_rect.y,
-        window_size.x - (status_bar_rect.x + status_bar_rect.width) - clear_dataset_button_rect_offset * 2,
-        status_bar_rect.height
+        status_bar_buttons_size.x,
+        status_bar_buttons_size.y
     };
 
     // gui
@@ -204,6 +267,11 @@ void dr_application_dataset_tab() {
     if (!dataset_empty && GuiButton(clear_dataset_button_rect, "Clear dataset")) {
         dr_application_dataset_clear();
         sprintf(dataset_status_bar_str_buffer, "%s", "Dataset has been cleared");
+    }
+    if (GuiButton(load_mnist_button_bounds, "Load MNIST")) {
+        if (!dr_application_dataset_load_mnist(1000)) {
+            printf("error\n");
+        }
     }
 }
 
@@ -891,7 +959,7 @@ void dr_application_prediction_tab() {
 
 
         // connections: canvas - circles
-        const float connection_thick = 2.0f + current_prob * 2.0f;
+        const float connection_thick = 2.0f + current_prob * 3.0f;
         const float color_val = 100 + current_prob * 155;
         const Color color = { color_val, color_val, color_val, 255 };
         DrawLineEx(canvas_connection_point, circle_pos, connection_thick, color);

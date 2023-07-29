@@ -13,7 +13,7 @@ static inline void* dr_malloc(const size_t size) {
     void* ptr = malloc(size);
     if (!ptr) {
         fprintf(stderr, "%s %zu %s\n", "Error when trying to allocate memory for", size, "bytes");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
     return ptr;
 }
@@ -22,7 +22,7 @@ static inline void* dr_realloc(void* ptr, const size_t size) {
     ptr = realloc(ptr, size);
     if (!ptr) {
         fprintf(stderr, "%s %zu %s\n", "Error when trying to reallocate memory for", size, "bytes");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
     return ptr;
 }
@@ -92,7 +92,7 @@ static inline void dr_array_2d_float_free(DR_FLOAT_TYPE** array, const size_t he
 }
 
 static inline char* dr_str_alloc(const char* str) {
-    char* new_str = DR_MALLOC(sizeof(char) * strlen(str));
+    char* new_str = (char*)DR_MALLOC(sizeof(char) * (strlen(str) + 1));
     if (!new_str) {
         return NULL;
     }
