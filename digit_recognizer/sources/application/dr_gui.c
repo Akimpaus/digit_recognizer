@@ -23,23 +23,23 @@ Vector2 dr_gui_canvas(const Rectangle bounds, const float button_clear_height, R
     };
     DrawRectangleLinesEx(bounds_outline_rect, line_thick, GRAY);
 
-    BeginTextureMode(target);
-
-    const bool mouse_left_down  = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
-    const bool mouse_right_down = IsMouseButtonDown(MOUSE_RIGHT_BUTTON);
-    if (mouse_left_down || mouse_right_down) {
-        if (last_point.x == -1 || last_point.y == -1) {
+    if (!GuiIsLocked()) {
+        BeginTextureMode(target);
+        const bool mouse_left_down  = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+        const bool mouse_right_down = IsMouseButtonDown(MOUSE_RIGHT_BUTTON);
+        if (mouse_left_down || mouse_right_down) {
+            if (last_point.x == -1 || last_point.y == -1) {
+                last_point = mouse_pos_canvas;
+            }
+            const Color line_color = mouse_left_down ? draw_color : erase_color;
+            DrawLineEx(mouse_pos_canvas, last_point, 3, line_color);
             last_point = mouse_pos_canvas;
+        } else if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) || IsMouseButtonReleased(MOUSE_BUTTON_RIGHT)) {
+            last_point.x = -1;
+            last_point.y = -1;
         }
-        const Color line_color = mouse_left_down ? draw_color : erase_color;
-        DrawLineEx(mouse_pos_canvas, last_point, 3, line_color);
-        last_point = mouse_pos_canvas;
-    } else if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) || IsMouseButtonReleased(MOUSE_BUTTON_RIGHT)) {
-        last_point.x = -1;
-        last_point.y = -1;
+        EndTextureMode();
     }
-
-    EndTextureMode();
 
     const Rectangle rect_src = { 0, 0, target.texture.width, -target.texture.height };
     DrawTexturePro(target.texture, rect_src, bounds, CLITERAL(Vector2){ 0, 0 }, 0, WHITE );

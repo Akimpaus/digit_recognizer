@@ -1,6 +1,5 @@
 #include <application/dr_application.h>
 #include <application/dr_gui.h>
-#define DR_FLOAT_TYPE float
 #include <neural_network/dr_neural_network.h>
 #include <limits.h>
 
@@ -18,6 +17,7 @@
 #define DR_APPLICATION_TEXT_FORMAT_PRECISION "%.4f"
 
 #define DR_APPLICATION_MNIST_DATASET_PATH         "dataset.bin"
+#define DR_APPLICATION_MNIST_DATASET_MAX_COUNT    60000
 #define DR_APPLICATION_CANVAS_RESOLUTION_WIDTH    28
 #define DR_APPLICATION_CANVAS_RESOLUTION_HEIGHT   28
 #define DR_APPLICATION_CANVAS_PIXELS_COUNT        (DR_APPLICATION_CANVAS_RESOLUTION_WIDTH *\
@@ -43,7 +43,8 @@ typedef enum {
 // general
 Vector2 window_size              = { DR_APPLICATION_WINDOW_WIDTH, DR_APPLICATION_WINDOW_HEIGHT };
 dr_application_tab current_tab   = dr_application_tab_dataset;
-dr_neural_network neural_network = { 0 };
+dr_neural_network neural_network            = { 0 };
+dr_neural_network pretrained_neural_network = { 0 };
 
 // dataset
 RenderTexture2D dataset_canvas_rtexture = { 0 };
@@ -53,6 +54,10 @@ size_t dataset_digits_count_all                          = 0;
 size_t dataset_digits_count[DR_APPLICATION_DIGITS_COUNT] = { 0 };
 DR_FLOAT_TYPE* dataset_digits_pixels                     = NULL;
 unsigned char* dataset_digits_results                    = NULL;
+bool dataset_attempt_to_load_mnist = false;
+bool dataset_attempt_to_load_mnist_failed = false;
+int dataset_count_to_load_mnist    = 100;
+bool dataset_count_to_load_spinner_edit = false;
 
 // training
 int training_list_view_scroll_index = 0;
@@ -67,7 +72,7 @@ char** training_hidden_layers_info    = NULL;
 DR_FLOAT_TYPE training_learning_rate  = 0.01;
 size_t training_current_epoch       = 0;
 size_t training_epochs              = 1000;
-bool training_epochs_value_box_edit = false;
+bool training_epochs_spinner_edit = false;
 bool training_unsuccessful_attempt_to_start_training = false;
 bool training_process_active     = false;
 bool training_procces_finished   = false;
@@ -84,7 +89,11 @@ bool prediction_show = false;
 DR_FLOAT_TYPE prediction_probs[DR_APPLICATION_DIGITS_COUNT] = { 0 };
 DR_FLOAT_TYPE prediction_max_prob = 0;
 size_t prediction_predicted_digit = 0;
-bool prediction_unsuccessful_attempt_to_predict = false;
+//bool prediction_unsuccessful_attempt_to_predict = false;
+bool prediction_use_my_neural_network         = false;
+bool prediction_use_pretrained_neural_networl = false;
+bool prediction_failed_attempt_to_select_my_neural_network         = false;
+bool prediction_failed_attempt_to_select_pretrained_neural_network = false;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////// GENERAL
 
@@ -148,7 +157,7 @@ bool dr_application_dataset_load_mnist(const size_t count) {
         printf("Mismatch application canvas resolution and MNSIT images resolution\n");
         return false;
     }
-    DR_ASSERT_MSG(count <= header[0], "Attempt to upload more MNIST images than there are");
+    DR_ASSERT_MSG(count <= header[0], "Attempt to load more MNIST images than there are");
 
     const size_t new_digits_count_all = dr_application_dataset_add_memory(count);
     DR_FLOAT_TYPE* new_pixels  = dataset_digits_pixels + dataset_digits_count_all * DR_APPLICATION_CANVAS_PIXELS_COUNT;
@@ -204,6 +213,14 @@ void dr_application_dataset_tab() {
         window_size.y - DR_APPLICATION_STATUS_BAR_HEIGHT - DR_APPLICATION_TAB_BOTTOM
     };
 
+    // dim area
+    Rectangle dim_area = {
+        0,
+        DR_APPLICATION_TAB_BOTTOM,
+        window_size.x,
+        window_size.y - DR_APPLICATION_TAB_BOTTOM
+    };
+
     // canvas
     const Rectangle canvas_bounds = {
         work_area.x + (work_area.width / 2 - DR_APPLICATION_CANVAS_WIDTH / 2),
@@ -219,6 +236,67 @@ void dr_application_dataset_tab() {
         canvas_bounds.y + DR_APPLICATION_CANVAS_WINDOW_HEIGHT,
         work_area.width,
         work_area.height - (canvas_bounds.y + canvas_bounds.height)
+    };
+
+    // window box bounds
+    const Vector2 window_box_size = {
+        work_area.width / 2.2,
+        work_area.height / 2
+    };
+    const Rectangle window_box_bounds = {
+        work_area.x + work_area.width / 2 - window_box_size.x / 2,
+        work_area.y + work_area.height / 2 - window_box_size.y / 2,
+        window_box_size.x,
+        window_box_size.y
+    };
+
+    // window box message
+    const char* window_box_message = "How many images do you want to load?";
+    const Font window_box_font = GetFontDefault();
+    const int window_box_font_size = GuiGetStyle(DEFAULT, TEXT_SIZE);
+    const int window_box_text_spacing = GuiGetStyle(DEFAULT, TEXT_SPACING);
+    const Color window_box_text_color = GetColor(GuiGetStyle(DEFAULT, TEXT_COLOR_NORMAL));
+    const Vector2 window_box_message_size = MeasureTextEx(
+        window_box_font, window_box_message, window_box_font_size, window_box_text_spacing);
+    const Vector2 window_box_message_pos  = {
+        window_box_bounds.x + window_box_bounds.width / 2 - window_box_message_size.x / 2,
+        window_box_bounds.y + window_box_bounds.height / 3 - window_box_message_size.y / 2
+    };
+
+    // window box spinner
+    const Vector2 window_box_spinner_size = {
+        window_box_bounds.width / 2,
+        20
+    };
+    const Rectangle window_box_spinner_bounds = {
+        window_box_bounds.x + window_box_bounds.width / 2 - window_box_spinner_size.x / 2,
+        window_box_message_pos.y + window_box_message_size.y + window_box_bounds.height / 5,
+        window_box_spinner_size.x,
+        window_box_spinner_size.y
+    };
+
+    // window box toggle group
+    const Vector2 window_box_toggle_group_size = {
+        window_box_bounds.width / 4,
+        20
+    };
+    const Rectangle window_box_toggle_group_bounds = {
+        window_box_bounds.x + window_box_bounds.width / 2 - window_box_toggle_group_size.x,
+        window_box_spinner_bounds.y + window_box_spinner_bounds.height + window_box_bounds.height / 5,
+        window_box_toggle_group_size.x,
+        window_box_toggle_group_size.y
+    };
+
+    // message box
+    const Vector2 message_box_size = {
+        work_area.width / 1.5,
+        work_area.height / 3
+    };
+    const Rectangle message_box_bounds = {
+        work_area.x + work_area.width / 2 - message_box_size.x / 2,
+        work_area.y + work_area.height / 2 - message_box_size.y / 2,
+        message_box_size.x,
+        message_box_size.y
     };
 
     // status bar
@@ -269,8 +347,51 @@ void dr_application_dataset_tab() {
         sprintf(dataset_status_bar_str_buffer, "%s", "Dataset has been cleared");
     }
     if (GuiButton(load_mnist_button_bounds, "Load MNIST")) {
-        if (!dr_application_dataset_load_mnist(1000)) {
-            printf("error\n");
+        dataset_attempt_to_load_mnist = true;
+    }
+
+    if (dataset_attempt_to_load_mnist) {
+        GuiUnlock();
+        dr_gui_dim(dim_area);
+        const int window_box_result = GuiWindowBox(window_box_bounds, "Loading the MNIST dataset");
+        DrawTextEx(window_box_font, window_box_message, window_box_message_pos,
+            window_box_font_size, window_box_text_spacing, window_box_text_color);
+        const bool window_box_spinner_result = GuiSpinner(
+            window_box_spinner_bounds, "Count ", &dataset_count_to_load_mnist,
+            1, DR_APPLICATION_MNIST_DATASET_MAX_COUNT, dataset_count_to_load_spinner_edit);
+        const int window_box_toggle_result = GuiToggleGroup(window_box_toggle_group_bounds, "Load;Cancel", -1);
+
+        if (window_box_spinner_result) {
+            dataset_count_to_load_spinner_edit = !dataset_count_to_load_spinner_edit;
+        }
+
+        if (window_box_toggle_result == 0) {
+            if (dr_application_dataset_load_mnist(dataset_count_to_load_mnist)) {
+                sprintf(dataset_status_bar_str_buffer, "%s(%d) %s",
+                    "MNIST dataset", dataset_count_to_load_mnist, "has been loaded");
+            } else {
+                dataset_attempt_to_load_mnist_failed = true;
+            }
+            dataset_attempt_to_load_mnist = false;
+            return;
+        }
+
+        if (window_box_result || window_box_toggle_result == 1) {
+            dataset_attempt_to_load_mnist = false;
+        } else {
+            GuiLock();
+        }
+    } else if (dataset_attempt_to_load_mnist_failed) {
+        GuiUnlock();
+        dr_gui_dim(dim_area);
+        const int message_box_result = GuiMessageBox(message_box_bounds,
+            "Loading MNIST dataset failed",
+            "An error occurred while trying to load MNIST dataset",
+            "Ok");
+        if (message_box_result >= 0) {
+            dataset_attempt_to_load_mnist_failed = false;
+        } else {
+            GuiLock();
         }
     }
 }
@@ -689,9 +810,9 @@ void dr_application_training_tab_hidden_layers(const Rectangle work_area) {
     const char* slider_right_text = TextFormat(DR_APPLICATION_TEXT_FORMAT_PRECISION, max_learning_rate);
     training_learning_rate = GuiSlider(learning_rate_slider_bounds, slider_left_text, slider_right_text,
         training_learning_rate, min_learning_rate, max_learning_rate);
-    if (GuiValueBox(epochs_value_box_bounds, "Epochs ",
-        (int*)&training_epochs, 1, INT_MAX, training_epochs_value_box_edit)) {
-        training_epochs_value_box_edit = !training_epochs_value_box_edit;
+    if (GuiSpinner(epochs_value_box_bounds, "Epochs ",
+        (int*)&training_epochs, 1, INT_MAX, training_epochs_spinner_edit)) {
+        training_epochs_spinner_edit = !training_epochs_spinner_edit;
     }
     if (GuiButton(train_button_bounds, "Train")) { // edited
         if (dataset_digits_count_all == 0) {
@@ -861,6 +982,9 @@ void dr_application_training_tab() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////// PREDICTION
 
 void dr_application_prediction_tab() {
+    // mouse pos
+    const Vector2 mouse_pos = GetMousePosition();
+
     // work area
     const Rectangle work_area = {
         0,
@@ -895,6 +1019,29 @@ void dr_application_prediction_tab() {
     Vector2 canvas_connection_point = {
         canvas_bounds.x + canvas_bounds.width,
         canvas_bounds.y + canvas_bounds.height / 2 - canvas_connection_height / 2
+    };
+
+    // check box
+    const Vector2 check_box_size = {
+        20,
+        20
+    };
+    const float check_box_margin = 10;
+
+    // check box my nn
+    const Rectangle check_box_my_nn_bounds = {
+        container_bounuds.x,
+        work_area.y + (canvas_bounds.y - work_area.y) / 2 - check_box_size.y - check_box_margin / 2,
+        check_box_size.x,
+        check_box_size.y
+    };
+
+    // check box pretrained nn
+    const Rectangle check_box_pretrained_nn_bounds = {
+        check_box_my_nn_bounds.x,
+        check_box_my_nn_bounds.y + check_box_my_nn_bounds.height + check_box_margin,
+        check_box_size.x,
+        check_box_size.y
     };
 
     // button predict
@@ -948,7 +1095,33 @@ void dr_application_prediction_tab() {
     };
 
     // gui
-    const bool neural_netwrok_trained = neural_network.layers_count > 0;
+    //const bool neural_network_trained = neural_network.layers_count > 0;
+
+    if (neural_network.layers_count == 0) {
+        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse_pos, check_box_my_nn_bounds)) {
+            prediction_failed_attempt_to_select_my_neural_network = true;
+        }
+        GuiLock();
+    } 
+    if (GuiCheckBox(check_box_my_nn_bounds, "My neural netowrk", prediction_use_my_neural_network)) {
+        prediction_use_my_neural_network = true;
+        prediction_use_pretrained_neural_networl = false;
+    }
+    GuiUnlock();
+
+    if (pretrained_neural_network.layers_count == 0) {
+        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) &&
+            CheckCollisionPointRec(mouse_pos, check_box_pretrained_nn_bounds)) {
+            prediction_failed_attempt_to_select_pretrained_neural_network = true;
+        }
+        GuiLock();
+    } 
+    if (GuiCheckBox(
+            check_box_pretrained_nn_bounds, "Pretrained neural network", prediction_use_pretrained_neural_networl)) {
+        prediction_use_my_neural_network = false;
+        prediction_use_pretrained_neural_networl = true;
+    }
+    GuiUnlock();
 
     for (size_t i = 0; i < DR_APPLICATION_DIGITS_COUNT; ++i) {
         const DR_FLOAT_TYPE current_prob = prediction_probs[i];
@@ -956,7 +1129,6 @@ void dr_application_prediction_tab() {
             circle_column_pos.x,
             circle_column_pos.y + (circle_radius * 2 + circle_margin) * i
         };
-
 
         // connections: canvas - circles
         const float connection_thick = 2.0f + current_prob * 3.0f;
@@ -999,22 +1171,23 @@ void dr_application_prediction_tab() {
     DrawRectangleRec(result_predict_bounds, BLACK);
     DrawRectangleLinesEx(result_predict_bounds, 1, GRAY);
 
-    if (GuiButton(button_predict_bounds, "Predict")) {
-        if (neural_netwrok_trained) {
-            prediction_show = true;
-            DR_FLOAT_TYPE pixels[DR_APPLICATION_CANVAS_PIXELS_COUNT] = { 0 };
-            dr_application_canvas_get_pixels(prediction_canvas_rtexture, pixels);
+    if ((prediction_use_my_neural_network || prediction_use_pretrained_neural_networl) &&
+        GuiButton(button_predict_bounds, "Predict")) {
+        prediction_show = true;
+        DR_FLOAT_TYPE pixels[DR_APPLICATION_CANVAS_PIXELS_COUNT] = { 0 };
+        dr_application_canvas_get_pixels(prediction_canvas_rtexture, pixels);
+        if (prediction_use_my_neural_network) {
             dr_neural_network_prediction_write(neural_network, pixels, prediction_probs);
-            prediction_max_prob = -1;
-            for (size_t i = 0; i < DR_APPLICATION_DIGITS_COUNT; ++i) {
-                const DR_FLOAT_TYPE curr_prob = prediction_probs[i];
-                if (prediction_probs[i] > prediction_max_prob) {
-                    prediction_max_prob = curr_prob;
-                    prediction_predicted_digit = i;
-                }
-            }
         } else {
-            prediction_unsuccessful_attempt_to_predict = true;
+            dr_neural_network_prediction_write(pretrained_neural_network, pixels, prediction_probs);
+        }
+        prediction_max_prob = -1;
+        for (size_t i = 0; i < DR_APPLICATION_DIGITS_COUNT; ++i) {
+            const DR_FLOAT_TYPE curr_prob = prediction_probs[i];
+            if (prediction_probs[i] > prediction_max_prob) {
+                prediction_max_prob = curr_prob;
+                prediction_predicted_digit = i;
+            }
         }
     }
 
@@ -1027,15 +1200,25 @@ void dr_application_prediction_tab() {
     };
     DrawText(prediction_text, prediction_text_pos.x, prediction_text_pos.y, prediction_font_size, WHITE);
 
-
-    if (prediction_unsuccessful_attempt_to_predict) {
+    if (prediction_failed_attempt_to_select_my_neural_network) {
         GuiUnlock();
         dr_gui_dim(work_area);
         const int message_box_result = GuiMessageBox(message_box_bounds,
-            "The neural network has not been created",
-            "To predict, you need to create and train your neural network ", "Ok");
+            "Your neural network is not available",
+            "Create and train your neural network before using ", "Ok");
         if (message_box_result >= 0) {
-            prediction_unsuccessful_attempt_to_predict = false;
+            prediction_failed_attempt_to_select_my_neural_network = false;
+        } else {
+            GuiLock();
+        }
+    } else if (prediction_failed_attempt_to_select_pretrained_neural_network) {
+        GuiUnlock();
+        dr_gui_dim(work_area);
+        const int message_box_result = GuiMessageBox(message_box_bounds,
+            "The pretrained neural network is not available",
+            "The pretrained neural network was not loaded ", "Ok");
+        if (message_box_result >= 0) {
+            prediction_failed_attempt_to_select_pretrained_neural_network = false;
         } else {
             GuiLock();
         }
