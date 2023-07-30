@@ -4,15 +4,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include <assert.h>
 
 #define DR_FLOAT_TYPE float
 #define DR_STR_BUFFER_SIZE 256
 
+static inline void dr_print_error(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    fprintf(stderr, format, args);
+    va_end(args);
+}
+
 static inline void* dr_malloc(const size_t size) {
     void* ptr = malloc(size);
     if (!ptr) {
-        fprintf(stderr, "%s %zu %s\n", "Error when trying to allocate memory for", size, "bytes");
+        dr_print_error("%s %zu %s\n", "Error when trying to allocate memory for", size, "bytes");
         exit(EXIT_FAILURE);
     }
     return ptr;
@@ -21,7 +29,7 @@ static inline void* dr_malloc(const size_t size) {
 static inline void* dr_realloc(void* ptr, const size_t size) {
     ptr = realloc(ptr, size);
     if (!ptr) {
-        fprintf(stderr, "%s %zu %s\n", "Error when trying to reallocate memory for", size, "bytes");
+        dr_print_error("%s %zu %s\n", "Error when trying to reallocate memory for", size, "bytes");
         exit(EXIT_FAILURE);
     }
     return ptr;
@@ -46,9 +54,6 @@ static inline void* dr_realloc(void* ptr, const size_t size) {
 #ifndef DR_ASSERT_MSG
 # define DR_ASSERT_MSG(cond, msg) assert((cond && msg))
 #endif
-
-#define DR_MIN(a, b) (((a) < (b)) ? (a) : (b)) // test
-#define DR_MAX(a, b) (((a) > (b)) ? (a) : (b)) // test
 
 #define DR_ARRAY_LENGTH(array) (sizeof(array) / sizeof(*array))
 

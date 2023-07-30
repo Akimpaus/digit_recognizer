@@ -1,4 +1,5 @@
 #include <application/dr_application.h>
+#include <neural_network/dr_matrix.h>
 
 int main() {
     dr_application_create();
