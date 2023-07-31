@@ -161,7 +161,7 @@ bool dr_application_dataset_load_mnist(const size_t count) {
     DR_ASSERT_MSG(count <= header[0], "Attempt to load more MNIST images than there are");
 
     const size_t new_digits_count_total = dr_application_dataset_add_memory(count);
-    DR_FLOAT_TYPE* new_pixels  = dataset_digits_pixels + dataset_digits_count_total * DR_APPLICATION_CANVAS_PIXELS_COUNT;
+    DR_FLOAT_TYPE* new_pixels = dataset_digits_pixels + dataset_digits_count_total * DR_APPLICATION_CANVAS_PIXELS_COUNT;
     unsigned char* new_results = dataset_digits_labels + dataset_digits_count_total; 
 
     const size_t pixels_count_total = count * DR_APPLICATION_CANVAS_PIXELS_COUNT;
@@ -1033,8 +1033,10 @@ void dr_application_prediction_tab() {
     prediction_text_pos.y = result_predict_bounds.y + result_predict_bounds.height / 2 - prediction_text_size.y / 2;
 
     // gui
+    const bool gui_was_locked = GuiIsLocked();
     if (user_neural_network.layers_count == 0) {
-        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse_pos, check_box_my_nn_bounds)) {
+        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) &&
+            CheckCollisionPointRec(mouse_pos, check_box_my_nn_bounds) && !gui_was_locked) {
             prediction_attempt_to_select_my_neural_network_failed = true;
         }
         GuiLock();
@@ -1043,11 +1045,13 @@ void dr_application_prediction_tab() {
         prediction_use_my_neural_network = true;
         prediction_use_pretrained_neural_network = false;
     }
-    GuiUnlock();
+    if (!gui_was_locked) {
+        GuiUnlock();
+    }
 
     if (pretrained_neural_network.layers_count == 0) {
         if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) &&
-            CheckCollisionPointRec(mouse_pos, check_box_pretrained_nn_bounds)) {
+            CheckCollisionPointRec(mouse_pos, check_box_pretrained_nn_bounds) && !gui_was_locked) {
             prediction_attempt_to_select_pretrained_neural_network_failed = true;
         }
         GuiLock();
@@ -1057,7 +1061,9 @@ void dr_application_prediction_tab() {
         prediction_use_my_neural_network = false;
         prediction_use_pretrained_neural_network = true;
     }
-    GuiUnlock();
+    if (!gui_was_locked) {
+        GuiUnlock();
+    }
 
     for (size_t i = 0; i < DR_APPLICATION_DIGITS_COUNT; ++i) {
         const DR_FLOAT_TYPE current_prob = prediction_probs[i];
