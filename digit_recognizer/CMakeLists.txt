@@ -33,9 +33,14 @@ target_include_directories(${PROJECT_LIB_NAME} PUBLIC
   third_party/include
   )
 target_link_libraries(${PROJECT_LIB_NAME} PUBLIC
-  m #math
   raylib
   )
+
+if (UNIX)
+  target_link_libraries(${PROJECT_LIB_NAME} PUBLIC
+    m
+  )
+endif()
 
 # Project execuatable
 configure_file(assets/dataset.bin ${CMAKE_CURRENT_BINARY_DIR}/dataset.bin COPYONLY)

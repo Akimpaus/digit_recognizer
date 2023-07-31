@@ -1,10 +1,8 @@
 #include <application/dr_application.h>
 #include <application/dr_gui.h>
+#include <application/dr_thread.h>
 #include <neural_network/dr_neural_network.h>
 #include <limits.h>
-
-// POSIX
-#include <pthread.h>
 
 #define DR_APPLICATION_SAVE_USER_NEURAL_NETWORK
 #define DR_APPLICATION_SAVE_USER_NEURAL_NETWORK_PATH       "user_neural_network.txt"
@@ -84,7 +82,8 @@ bool training_proccess_stopped   = false;
 bool training_neural_network_updated  = false;
 DR_FLOAT_TYPE training_error          = 0;
 size_t training_current_dataset_index = 0;
-pthread_t training_thread_id          = { 0 };
+dr_thread_id_t training_thread_id         = { 0 };
+dr_thread_handle_t training_thread_handle = 0;
 
 // prediction
 RenderTexture2D prediction_canvas_rtexture = { 0 };
@@ -531,7 +530,7 @@ void dr_application_train_neural_network_current_data() {
     dr_neural_network_back_propagation(user_neural_network, training_learning_rate, error_output);
 }
 
-void* dr_application_train_neural_network_other_thread(void*) {
+dr_thread_function_result_t DR_WINAPI dr_application_train_neural_network_other_thread(void* data) {
     training_error = 0;
     while (training_process_active && training_current_epoch < training_count_epochs) {
         if (training_current_dataset_index >= dataset_digits_count_total) {
@@ -552,13 +551,12 @@ void* dr_application_train_neural_network_other_thread(void*) {
     }
 #endif // DR_APPLICATION_SAVE_USER_NEURAL_NETOWRK
 
-    return NULL;
+    return 0;
 }
 
 void dr_application_start_train_neural_network_other_thread() {
-    const int result = pthread_create(
-        &training_thread_id, NULL, dr_application_train_neural_network_other_thread, NULL);
-    DR_ASSERT_MSG(result == 0, "error creating a thread for training a neural network in application");
+    training_thread_handle = dr_thread_create(&training_thread_id, dr_application_train_neural_network_other_thread);
+    DR_ASSERT_MSG(!training_thread_handle, "error creating a thread for training a neural network in application");
 }
 
 void dr_application_training_tab_hidden_layers_list_view(const Rectangle list_view_bounds, const bool removed) {
@@ -869,7 +867,8 @@ void dr_application_training_tab_training_process(const Rectangle work_area) {
     const int stop_button_res = GuiButton(stop_button_bounds, "Stop");
     if (stop_button_res || window_box_res) {
         training_process_active = false;
-        pthread_join(training_thread_id, NULL);
+        const bool thread_join_result = dr_thread_join(training_thread_handle, training_thread_id);
+        DR_ASSERT_MSG(thread_join_result, "thread join error when training the neural network in the application");
         training_proccess_stopped = true;
         return;
     }
@@ -1232,8 +1231,14 @@ void dr_application_close() {
     // training
     if (training_process_active) {
         training_process_active = false;
-        pthread_join(training_thread_id, NULL);
+        const bool thread_join_result = dr_thread_join(training_thread_handle, training_thread_id);
+        DR_ASSERT_MSG(thread_join_result, "thread join error when closing the application");
     }
+
+    if (training_thread_handle && !dr_thread_close(training_thread_handle)) {
+        dr_print_error("thread close error in the application");
+    }
+
     dr_application_training_hidden_layers_info_clear();
     if (dr_neural_network_valid(user_neural_network)) {
         dr_neural_network_free(&user_neural_network);

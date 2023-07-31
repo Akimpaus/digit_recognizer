@@ -164,23 +164,12 @@ UTEST(dr_matrix, fill_random) {
 
 UTEST(dr_matrix, copy_to_array) {
     {
-        const size_t width  = 0;
-        const size_t height = 0;
-        const size_t size   = width * height;
-        const DR_FLOAT_TYPE matrix_arr[] = {};
-        dr_matrix matrix = dr_matrix_create_empty();
-        DR_FLOAT_TYPE result_arr[size];
-        dr_matrix_copy_to_array(matrix, result_arr);
-        EXPECT_TRUE(dr_testing_matrix_array_equals(size, matrix_arr, result_arr));
-    }
-
-    {
         const size_t width  = 1;
         const size_t height = 1;
         const size_t size   = width * height;
         const DR_FLOAT_TYPE matrix_arr[] = { 9 };
         dr_matrix matrix = dr_matrix_create_from_array(matrix_arr, width, height);
-        DR_FLOAT_TYPE result_arr[size];
+        DR_FLOAT_TYPE result_arr[1 * 1];
         dr_matrix_copy_to_array(matrix, result_arr);
         EXPECT_TRUE(dr_testing_matrix_array_equals(size, matrix_arr, result_arr));
         dr_matrix_free(&matrix);
@@ -196,7 +185,7 @@ UTEST(dr_matrix, copy_to_array) {
             7, 8, 9
         };
         dr_matrix matrix = dr_matrix_create_from_array(matrix_arr, width, height);
-        DR_FLOAT_TYPE result_arr[size];
+        DR_FLOAT_TYPE result_arr[3 * 3];
         dr_matrix_copy_to_array(matrix, result_arr);
         EXPECT_TRUE(dr_testing_matrix_array_equals(size, matrix_arr, result_arr));
         dr_matrix_free(&matrix);
@@ -212,7 +201,7 @@ UTEST(dr_matrix, copy_to_array) {
             11, 12, 13, 14, 15
         };
         dr_matrix matrix = dr_matrix_create_from_array(matrix_arr, width, height);
-        DR_FLOAT_TYPE result_arr[size];
+        DR_FLOAT_TYPE result_arr[5 * 3];
         dr_matrix_copy_to_array(matrix, result_arr);
         EXPECT_TRUE(dr_testing_matrix_array_equals(size, matrix_arr, result_arr));
         dr_matrix_free(&matrix);
@@ -230,7 +219,7 @@ UTEST(dr_matrix, copy_to_array) {
             13, 14, 15
         };
         dr_matrix matrix = dr_matrix_create_from_array(matrix_arr, width, height);
-        DR_FLOAT_TYPE result_arr[size];
+        DR_FLOAT_TYPE result_arr[3 * 5];
         dr_matrix_copy_to_array(matrix, result_arr);
         EXPECT_TRUE(dr_testing_matrix_array_equals(size, matrix_arr, result_arr));
         dr_matrix_free(&matrix);
@@ -238,17 +227,6 @@ UTEST(dr_matrix, copy_to_array) {
 }
 
 UTEST(dr_matrix, copy_array) {
-    {
-        const size_t width  = 0;
-        const size_t height = 0;
-        const DR_FLOAT_TYPE arr[] = {};
-        dr_matrix matrix = dr_matrix_alloc(width, height);
-        dr_matrix_copy_array(matrix, arr);
-        EXPECT_FALSE(matrix.elements);
-        EXPECT_EQ(matrix.width, width);
-        EXPECT_EQ(matrix.height, height);
-    }
-
     {
         const size_t width  = 1;
         const size_t height = 1;

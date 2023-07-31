@@ -11,5 +11,4 @@ include_directories(
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
     digit_recognizer_lib
-    m #math
 )
