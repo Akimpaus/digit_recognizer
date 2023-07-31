@@ -6,6 +6,10 @@
 // POSIX
 #include <pthread.h>
 
+#define DR_APPLICATION_SAVE_USER_NEURAL_NETWORK
+#define DR_APPLICATION_SAVE_USER_NEURAL_NETWORK_PATH       "user_neural_network.txt"
+#define DR_APPLICATION_LOAD_PRETRAINED_NEURAL_NETWORK_PATH "pretrained_neural_network.txt"
+
 #define DR_APPLICATION_WINDOW_WIDTH          800
 #define DR_APPLICATION_WINDOW_HEIGHT         600
 #define DR_APPLICATION_DIGIT_RECOGNIZER_STR  "Digit recognizer"
@@ -541,6 +545,13 @@ void* dr_application_train_neural_network_other_thread(void*) {
     training_procces_finished = true;
     training_current_dataset_index = 0;
     training_current_epoch = 0;
+
+#ifdef DR_APPLICATION_SAVE_USER_NEURAL_NETWORK
+    if (!dr_neural_network_save_to_file(user_neural_network, DR_APPLICATION_SAVE_USER_NEURAL_NETWORK_PATH)) {
+        dr_print_error("Error saving the user neural network");
+    }
+#endif // DR_APPLICATION_SAVE_USER_NEURAL_NETOWRK
+
     return NULL;
 }
 
@@ -1024,14 +1035,6 @@ void dr_application_prediction_tab() {
     message_box_bounds.x = work_area.x + work_area.width / 2 - message_box_bounds.width / 2;
     message_box_bounds.y = work_area.y + work_area.height / 2 - message_box_bounds.height / 2;
 
-    // prediction text
-    const size_t prediction_font_size = 50;
-    const char* prediction_text = prediction_show ? TextFormat("%d", prediction_predicted_digit) : "?";
-    const Vector2 prediction_text_size = MeasureTextEx(GetFontDefault(), prediction_text, prediction_font_size, 0);
-    Vector2 prediction_text_pos = { 0 };
-    prediction_text_pos.x = result_predict_bounds.x + result_predict_bounds.width / 2 - prediction_text_size.x / 2;
-    prediction_text_pos.y = result_predict_bounds.y + result_predict_bounds.height / 2 - prediction_text_size.y / 2;
-
     // gui
     const bool gui_was_locked = GuiIsLocked();
     if (user_neural_network.layers_count == 0) {
@@ -1130,6 +1133,12 @@ void dr_application_prediction_tab() {
         }
     }
 
+    const size_t prediction_font_size = 50;
+    const char* prediction_text = prediction_show ? TextFormat("%d", prediction_predicted_digit) : "?";
+    const Vector2 prediction_text_size = MeasureTextEx(GetFontDefault(), prediction_text, prediction_font_size, 0);
+    Vector2 prediction_text_pos = { 0 };
+    prediction_text_pos.x = result_predict_bounds.x + result_predict_bounds.width / 2 - prediction_text_size.x / 2;
+    prediction_text_pos.y = result_predict_bounds.y + result_predict_bounds.height / 2 - prediction_text_size.y / 2;
     DrawText(prediction_text, prediction_text_pos.x, prediction_text_pos.y, prediction_font_size, WHITE);
 
     if (prediction_attempt_to_select_my_neural_network_failed) {
@@ -1211,6 +1220,12 @@ void dr_application_create() {
     prediction_canvas_rtexture = LoadRenderTexture(
         DR_APPLICATION_CANVAS_RESOLUTION_WIDTH, DR_APPLICATION_CANVAS_RESOLUTION_HEIGHT);
     dr_application_canvas_clear(prediction_canvas_rtexture);
+
+    // application
+    pretrained_neural_network = dr_neural_network_load_from_file(DR_APPLICATION_LOAD_PRETRAINED_NEURAL_NETWORK_PATH);
+    if (!dr_neural_network_valid(pretrained_neural_network)) {
+        dr_print_error("Error to load the pretrained neural network\n");
+    }
 }
 
 void dr_application_close() {
@@ -1222,6 +1237,9 @@ void dr_application_close() {
     dr_application_training_hidden_layers_info_clear();
     if (dr_neural_network_valid(user_neural_network)) {
         dr_neural_network_free(&user_neural_network);
+    }
+    if (dr_neural_network_valid(pretrained_neural_network)) {
+        dr_neural_network_free(&pretrained_neural_network);
     }
 
     // dataset
