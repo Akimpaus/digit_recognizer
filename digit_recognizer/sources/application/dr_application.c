@@ -76,7 +76,7 @@ bool training_epochs_spinner_edit = false;
 bool training_attempt_to_start_training_failed = false;
 bool training_process_active     = false;
 bool training_procces_finished   = false;
-bool training_proccess_cancelled = false;
+bool training_proccess_stopped   = false;
 bool training_neural_network_updated  = false;
 DR_FLOAT_TYPE training_error          = 0;
 size_t training_current_dataset_index = 0;
@@ -512,7 +512,7 @@ void dr_application_train_neural_network_current_data() {
 
     DR_FLOAT_TYPE real_output[DR_APPLICATION_DIGITS_COUNT]     = { 0 };
     DR_FLOAT_TYPE expected_output[DR_APPLICATION_DIGITS_COUNT] = { 0 };
-    DR_FLOAT_TYPE output_error[DR_APPLICATION_DIGITS_COUNT]           = { 0 };
+    DR_FLOAT_TYPE error_output[DR_APPLICATION_DIGITS_COUNT] = { 0 };
     expected_output[dataset_digits_labels[training_current_dataset_index]] = 1;
     dr_neural_network_set_input(user_neural_network,
         dataset_digits_pixels + training_current_dataset_index * DR_APPLICATION_CANVAS_PIXELS_COUNT);
@@ -520,11 +520,11 @@ void dr_application_train_neural_network_current_data() {
     dr_neural_network_get_output(user_neural_network, real_output);
     DR_FLOAT_TYPE error_sum = 0;
     for (size_t i = 0; i < DR_APPLICATION_DIGITS_COUNT; ++i) {
-        output_error[i] = expected_output[i] - real_output[i];
-        error_sum += output_error[i];
+        error_output[i] = expected_output[i] - real_output[i];
+        error_sum += error_output[i];
     }
     training_error = fabs(error_sum);
-    dr_neural_network_back_propagation(user_neural_network, training_learning_rate, output_error);
+    dr_neural_network_back_propagation(user_neural_network, training_learning_rate, error_output);
 }
 
 void* dr_application_train_neural_network_other_thread(void*) {
@@ -701,8 +701,6 @@ void dr_application_training_tab_hidden_layers_list_view_item_controllers(
             dropbox_split_text[training_controller_dropbox_index]);
         training_neural_network_updated = true;
     }
-
-    return;
 }
 
 void dr_application_training_tab_hidden_layers(const Rectangle work_area) {
@@ -722,53 +720,46 @@ void dr_application_training_tab_hidden_layers(const Rectangle work_area) {
     list_view_bounds.x =
         hidden_layers_bounds.x + (hidden_layers_bounds.width / 2 - list_view_bounds.width / 2) * !layer_selected;
     list_view_bounds.y = hidden_layers_bounds.y;
-    // CONTINUE REFACTORING FROM HERE
 
-    // preset
+    // settings
     const float dist_to_bottom =
         (work_area.y + work_area.height) - (hidden_layers_bounds.y + hidden_layers_bounds.height);
 
-    const Vector2 train_preset_bounds_size = {
-        hidden_layers_bounds.width / 2,
-        dist_to_bottom / 2
-    };
-    const Rectangle train_preset_bounds = {
-        hidden_layers_bounds.x + hidden_layers_bounds.width / 2 - hidden_layers_bounds.width / 4,
-        (hidden_layers_bounds.y + hidden_layers_bounds.height) + dist_to_bottom / 2 - train_preset_bounds_size.y / 2,
-        train_preset_bounds_size.x,
-        train_preset_bounds_size.y
-    };
+    Rectangle train_settings_bounds = { 0 };
+    train_settings_bounds.width  = hidden_layers_bounds.width / 2;
+    train_settings_bounds.height = dist_to_bottom / 2;
+    train_settings_bounds.x = hidden_layers_bounds.x + hidden_layers_bounds.width / 2 - hidden_layers_bounds.width / 4;
+    train_settings_bounds.y = (hidden_layers_bounds.y + hidden_layers_bounds.height) +
+        dist_to_bottom / 2 - train_settings_bounds.height / 2;
 
-    // preset element
-    const Vector2 train_preset_element_size = {
-        train_preset_bounds.width,
-        train_preset_bounds.height / 4
-    };
-    const float train_preset_height = train_preset_element_size.y * 3;
+    // settings element
+    Vector2 train_settings_element_size = { 0 };
+    train_settings_element_size.x = train_settings_bounds.width;
+    train_settings_element_size.y = train_settings_bounds.height / 4;
+    const float train_settings_height = train_settings_element_size.y * 3;
 
     // slider learning rate
-    const Rectangle learning_rate_slider_bounds = {
-        train_preset_bounds.x + train_preset_bounds.width / 2 - train_preset_element_size.x / 2,
-        train_preset_bounds.y + train_preset_bounds.height / 2 - train_preset_height / 2,
-        train_preset_element_size.x,
-        train_preset_element_size.y
-    };
+    Rectangle learning_rate_slider_bounds = { 0 };
+    learning_rate_slider_bounds.x =
+        train_settings_bounds.x + train_settings_bounds.width / 2 - train_settings_element_size.x / 2;
+    learning_rate_slider_bounds.y =
+        train_settings_bounds.y + train_settings_bounds.height / 2 - train_settings_height / 2;
+    learning_rate_slider_bounds.width  = train_settings_element_size.x;
+    learning_rate_slider_bounds.height = train_settings_element_size.y;
 
     // value box epochs
-    const Rectangle epochs_value_box_bounds = {
-        learning_rate_slider_bounds.x,
-        learning_rate_slider_bounds.y + learning_rate_slider_bounds.height,
-        train_preset_element_size.x,
-        train_preset_element_size.y
-    };
+    Rectangle epochs_value_box_bounds = { 0 };
+    epochs_value_box_bounds.x = learning_rate_slider_bounds.x;
+    epochs_value_box_bounds.y = learning_rate_slider_bounds.y + learning_rate_slider_bounds.height;
+    epochs_value_box_bounds.width  = train_settings_element_size.x;
+    epochs_value_box_bounds.height = train_settings_element_size.y;
 
     // button
-    const Rectangle train_button_bounds = {
-        epochs_value_box_bounds.x,
-        epochs_value_box_bounds.y + epochs_value_box_bounds.height,
-        train_preset_element_size.x,
-        train_preset_element_size.y
-    };
+    Rectangle train_button_bounds = { 0 };
+    train_button_bounds.x = epochs_value_box_bounds.x;
+    train_button_bounds.y = epochs_value_box_bounds.y + epochs_value_box_bounds.height;
+    train_button_bounds.width  = train_settings_element_size.x;
+    train_button_bounds.height = train_settings_element_size.y;
 
     // gui
     bool removed = false;
@@ -778,19 +769,20 @@ void dr_application_training_tab_hidden_layers(const Rectangle work_area) {
     dr_application_training_tab_hidden_layers_list_view_item_controllers(
         hidden_layers_bounds, list_view_bounds, layer_selected);
 
-    const float min_learning_rate = 0;
-    const float max_learning_rate = 0.3;
-    char slider_left_text[DR_STR_BUFFER_SIZE]  = { 0 };
+    const float min_learning_rate = 0.01;
+    const float max_learning_rate = 0.1;
+    char slider_left_text[DR_STR_BUFFER_SIZE] = { 0 };
     TextCopy(slider_left_text, TextFormat(
         "%s: "DR_APPLICATION_TEXT_FORMAT_PRECISION, "Learning rate", training_learning_rate));
     const char* slider_right_text = TextFormat(DR_APPLICATION_TEXT_FORMAT_PRECISION, max_learning_rate);
     training_learning_rate = GuiSlider(learning_rate_slider_bounds, slider_left_text, slider_right_text,
         training_learning_rate, min_learning_rate, max_learning_rate);
+
     if (GuiSpinner(epochs_value_box_bounds, "Epochs ",
         (int*)&training_count_epochs, 1, INT_MAX, training_epochs_spinner_edit)) {
         training_epochs_spinner_edit = !training_epochs_spinner_edit;
     }
-    if (GuiButton(train_button_bounds, "Train")) { // edited
+    if (GuiButton(train_button_bounds, "Train")) {
         if (dataset_digits_count_total == 0) {
             training_attempt_to_start_training_failed = true;
             return;
@@ -809,74 +801,65 @@ void dr_application_training_tab_hidden_layers(const Rectangle work_area) {
 }
 
 void dr_application_training_tab_training_process(const Rectangle work_area) {
-    const Vector2 window_box_size = {
-        work_area.width / 2.2,
-        work_area.height / 2
-    };
-    const Rectangle window_box_bounds = {
-        work_area.x + work_area.width / 2 - window_box_size.x / 2,
-        work_area.y + work_area.height / 2 - window_box_size.y / 2,
-        window_box_size.x,
-        window_box_size.y
-    };
-
     // window box
-    const Vector2 window_box_content_size = {
-        window_box_bounds.width / 1.5,
-        window_box_bounds.height / 2
-    };
-    const Rectangle window_box_content_bounds = {
-        window_box_bounds.x + window_box_bounds.width / 2 - window_box_content_size.x / 2,
-        window_box_bounds.y + window_box_bounds.height / 2 - window_box_content_size.y / 2,
-        window_box_content_size.x,
-        window_box_content_size.y
-    };
+    Rectangle window_box_bounds = { 0 };
+    window_box_bounds.width  = work_area.width / 2.2;
+    window_box_bounds.height = work_area.height / 2;
+    window_box_bounds.x = work_area.x + work_area.width / 2 - window_box_bounds.width / 2;
+    window_box_bounds.y = work_area.y + work_area.height / 2 - window_box_bounds.height / 2;
+
+    // window box content
+    Rectangle window_box_content_bounds = { 0 };
+    window_box_content_bounds.width  = window_box_bounds.width / 1.5;
+    window_box_content_bounds.height = window_box_bounds.height / 2;
+    window_box_content_bounds.x =
+        window_box_bounds.x + window_box_bounds.width / 2 - window_box_content_bounds.width / 2;
+    window_box_content_bounds.y =
+        window_box_bounds.y + window_box_bounds.height / 2 - window_box_content_bounds.height / 2;
 
     // window box content elements
     const float window_box_content_elements_margin = 10;
-    const Vector2 window_box_content_element_size = {
-        window_box_content_bounds.width / 2,
-        window_box_content_bounds.height / 8
-    };
+    Vector2 window_box_content_element_size = { 0 };
+    window_box_content_element_size.x = window_box_content_bounds.width / 2;
+    window_box_content_element_size.y = window_box_content_bounds.height / 8;
 
     // label error
-    const Rectangle label_error_bounds = {
-        window_box_content_bounds.x + window_box_content_bounds.width / 2 - window_box_content_element_size.x / 2,
-        window_box_content_bounds.y + window_box_content_bounds.height / 2 -
-            window_box_content_element_size.y / 2 - window_box_content_elements_margin / 2,
-        window_box_content_element_size.x,
-        window_box_content_element_size.y
-    };
+    Rectangle label_error_bounds = { 0 };
+    label_error_bounds.x =
+        window_box_content_bounds.x + window_box_content_bounds.width / 2 - window_box_content_element_size.x / 2;
+    label_error_bounds.y = window_box_content_bounds.y + window_box_content_bounds.height / 2 -
+            window_box_content_element_size.y / 2 - window_box_content_elements_margin / 2;
+    label_error_bounds.width  = window_box_content_element_size.x;
+    label_error_bounds.height = window_box_content_element_size.y;
 
     // progress bar
-    const Rectangle progress_bar_bounds = {
-        window_box_bounds.x + window_box_bounds.width / 2 - window_box_content_element_size.x / 2,
-        label_error_bounds.y + label_error_bounds.height + window_box_content_elements_margin / 2,
-        window_box_content_element_size.x,
-        window_box_content_element_size.y
-    };
+    Rectangle progress_bar_bounds = { 0 };
+    progress_bar_bounds.x = window_box_bounds.x + window_box_bounds.width / 2 - window_box_content_element_size.x / 2;
+    progress_bar_bounds.y = label_error_bounds.y + label_error_bounds.height + window_box_content_elements_margin / 2;
+    progress_bar_bounds.width  = window_box_content_element_size.x;
+    progress_bar_bounds.height = window_box_content_element_size.y;
 
-    // cancel button
-    const float dist_to_bottom = window_box_bounds.y + window_box_bounds.height -
-        (progress_bar_bounds.y + progress_bar_bounds.height);
-    const Vector2 cancel_button_size = {
-        window_box_bounds.width / 5,
-        window_box_content_element_size.y
-    };
-    const Rectangle cancel_button_bounds = {
-        window_box_bounds.x + window_box_bounds.width / 2 - cancel_button_size.x / 2,
-        progress_bar_bounds.y + progress_bar_bounds.height + dist_to_bottom / 2 - cancel_button_size.y / 2,
-        cancel_button_size.x,
-        cancel_button_size.y
-    };
+    // stop button
+    const float dist_from_progress_bar_to_bottom =
+        window_box_bounds.y + window_box_bounds.height - (progress_bar_bounds.y + progress_bar_bounds.height);
+    Vector2 stop_button_size = { 0 };
+    stop_button_size.x = window_box_bounds.width / 5;
+    stop_button_size.y = window_box_content_element_size.y;
+
+    Rectangle stop_button_bounds = { 0 };
+    stop_button_bounds.x = window_box_bounds.x + window_box_bounds.width / 2 - stop_button_size.x / 2;
+    stop_button_bounds.y = progress_bar_bounds.y + progress_bar_bounds.height +
+        dist_from_progress_bar_to_bottom / 2 - stop_button_size.y / 2;
+    stop_button_bounds.width  = stop_button_size.x;
+    stop_button_bounds.height = stop_button_size.y;
 
     // gui
-    const int window_box_res    = GuiWindowBox(window_box_bounds, "Neural network training process");
-    const int cancel_button_res = GuiButton(cancel_button_bounds, "Stop");
-    if (cancel_button_res || window_box_res) {
+    const int window_box_res  = GuiWindowBox(window_box_bounds, "Neural network training process");
+    const int stop_button_res = GuiButton(stop_button_bounds, "Stop");
+    if (stop_button_res || window_box_res) {
         training_process_active = false;
         pthread_join(training_thread_id, NULL);
-        training_proccess_cancelled = true;
+        training_proccess_stopped = true;
         return;
     }
 
@@ -889,24 +872,18 @@ void dr_application_training_tab_training_process(const Rectangle work_area) {
 
 void dr_application_training_tab() {
     // work area
-    const Rectangle work_area = {
-        0,
-        DR_APPLICATION_TAB_BOTTOM,
-        window_size.x,
-        window_size.y - DR_APPLICATION_TAB_BOTTOM
-    };
+    Rectangle work_area = { 0 };
+    work_area.x = 0;
+    work_area.y = DR_APPLICATION_TAB_BOTTOM;
+    work_area.width  = window_size.x;
+    work_area.height = window_size.y - DR_APPLICATION_TAB_BOTTOM;
 
     // message box
-    const Vector2 message_box_size = {
-        work_area.width / 1.6,
-        work_area.height / 4
-    };
-    const Rectangle message_box_bounds = {
-        work_area.x + work_area.width / 2 - message_box_size.x / 2,
-        work_area.y + work_area.height / 2 - message_box_size.y / 2,
-        message_box_size.x,
-        message_box_size.y
-    };
+    Rectangle message_box_bounds = { 0 };
+    message_box_bounds.width  = work_area.width / 1.6;
+    message_box_bounds.height = work_area.height / 4;
+    message_box_bounds.x = work_area.x + work_area.width / 2 - message_box_bounds.width / 2;
+    message_box_bounds.y = work_area.y + work_area.height / 2 - message_box_bounds.height / 2;
 
     // gui
     dr_application_training_tab_hidden_layers(work_area);
@@ -929,14 +906,14 @@ void dr_application_training_tab() {
         dr_gui_dim(work_area);
         dr_application_training_tab_training_process(work_area);
         GuiLock();
-    } else if (training_proccess_cancelled) {
+    } else if (training_proccess_stopped) {
         GuiUnlock();
         dr_gui_dim(work_area);
         const char* message = TextFormat(
             "Neural network training stopped with a last error: "DR_APPLICATION_TEXT_FORMAT_PRECISION, training_error);
         const int message_box_result = GuiMessageBox(message_box_bounds, "Stopped", message, "Ok");
         if (message_box_result == 0 || message_box_result == 1) {
-            training_proccess_cancelled = false;
+            training_proccess_stopped = false;
             training_procces_finished   = false;
         } else {
             GuiLock();
@@ -962,117 +939,100 @@ void dr_application_prediction_tab() {
     const Vector2 mouse_pos = GetMousePosition();
 
     // work area
-    const Rectangle work_area = {
-        0,
-        DR_APPLICATION_TAB_BOTTOM,
-        window_size.x,
-        window_size.y - DR_APPLICATION_TAB_BOTTOM
-    };
+    Rectangle work_area = { 0 };
+    work_area.x = 0;
+    work_area.y = DR_APPLICATION_TAB_BOTTOM;
+    work_area.width  = window_size.x;
+    work_area.height = window_size.y - DR_APPLICATION_TAB_BOTTOM;
 
     // container
-    const Vector2 container_size = {
-        work_area.width / 1.1,
-        DR_APPLICATION_CANVAS_HEIGHT + DR_APPLICATION_CANVAS_CLEAR_BUTTON_HEIGHT * 2
-    };
-    const Rectangle container_bounuds = {
-        work_area.x + work_area.width / 2 - container_size.x / 2,
-        work_area.y + work_area.height / 2 - container_size.y / 2,
-        container_size.x,
-        container_size.y
-    };
+    Rectangle container_bounds = { 0 };
+    container_bounds.width  = work_area.width / 1.1;
+    container_bounds.height = DR_APPLICATION_CANVAS_HEIGHT + DR_APPLICATION_CANVAS_CLEAR_BUTTON_HEIGHT * 2;
+    container_bounds.x = work_area.x + work_area.width / 2 - container_bounds.width / 2;
+    container_bounds.y = work_area.y + work_area.height / 2 - container_bounds.height / 2;
 
     // canvas
-    const Rectangle canvas_bounds = {
-        container_bounuds.x,
-        container_bounuds.y + container_bounuds.height / 2 - DR_APPLICATION_CANVAS_HEIGHT / 2,
-        DR_APPLICATION_CANVAS_WIDTH,
-        DR_APPLICATION_CANVAS_HEIGHT
-    };
+    Rectangle canvas_bounds = { 0 };
+    canvas_bounds.x = container_bounds.x;
+    canvas_bounds.y = container_bounds.y + container_bounds.height / 2 - DR_APPLICATION_CANVAS_HEIGHT / 2;
+    canvas_bounds.width  = DR_APPLICATION_CANVAS_WIDTH;
+    canvas_bounds.height = DR_APPLICATION_CANVAS_HEIGHT;
 
     // canvas connection
     const float canvas_connection_height = canvas_bounds.height / 3;
     const float canvas_connection_offset = canvas_connection_height / DR_APPLICATION_DIGITS_COUNT;
-    Vector2 canvas_connection_point = {
-        canvas_bounds.x + canvas_bounds.width,
-        canvas_bounds.y + canvas_bounds.height / 2 - canvas_connection_height / 2
-    };
+    Vector2 canvas_connection_point = { 0 };
+    canvas_connection_point.x = canvas_bounds.x + canvas_bounds.width;
+    canvas_connection_point.y = canvas_bounds.y + canvas_bounds.height / 2 - canvas_connection_height / 2;
 
     // check box
-    const Vector2 check_box_size = {
-        20,
-        20
-    };
+    Vector2 check_box_size = { 0 };
+    check_box_size.x = 20;
+    check_box_size.y = 20;
     const float check_box_margin = 10;
 
     // check box my nn
-    const Rectangle check_box_my_nn_bounds = {
-        container_bounuds.x,
-        work_area.y + (canvas_bounds.y - work_area.y) / 2 - check_box_size.y - check_box_margin / 2,
-        check_box_size.x,
-        check_box_size.y
-    };
+    Rectangle check_box_my_nn_bounds = { 0 };
+    check_box_my_nn_bounds.x = container_bounds.x;
+    check_box_my_nn_bounds.y =
+        work_area.y + (canvas_bounds.y - work_area.y) / 2 - check_box_size.y - check_box_margin / 2;
+    check_box_my_nn_bounds.width  = check_box_size.x;
+    check_box_my_nn_bounds.height = check_box_size.y;
 
     // check box pretrained nn
-    const Rectangle check_box_pretrained_nn_bounds = {
-        check_box_my_nn_bounds.x,
-        check_box_my_nn_bounds.y + check_box_my_nn_bounds.height + check_box_margin,
-        check_box_size.x,
-        check_box_size.y
-    };
+    Rectangle check_box_pretrained_nn_bounds = { 0 };
+    check_box_pretrained_nn_bounds.x = check_box_my_nn_bounds.x;
+    check_box_pretrained_nn_bounds.y = check_box_my_nn_bounds.y + check_box_my_nn_bounds.height + check_box_margin;
+    check_box_pretrained_nn_bounds.width  = check_box_size.x;
+    check_box_pretrained_nn_bounds.height = check_box_size.y;
 
     // button predict
-    const Rectangle button_predict_bounds = {
-        canvas_bounds.x,
-        canvas_bounds.y + canvas_bounds.height + DR_APPLICATION_CANVAS_CLEAR_BUTTON_HEIGHT,
-        canvas_bounds.width,
-        DR_APPLICATION_CANVAS_CLEAR_BUTTON_HEIGHT
-    };
+    Rectangle button_predict_bounds = { 0 };
+    button_predict_bounds.x = canvas_bounds.x;
+    button_predict_bounds.y = canvas_bounds.y + canvas_bounds.height + DR_APPLICATION_CANVAS_CLEAR_BUTTON_HEIGHT;
+    button_predict_bounds.width  = canvas_bounds.width;
+    button_predict_bounds.height = DR_APPLICATION_CANVAS_CLEAR_BUTTON_HEIGHT;
 
     // result predict bounds
-    const Vector2 result_predict_bounds_size = {
-        container_bounuds.width / 8,
-        container_bounuds.height / 3
-    };
-    const Rectangle result_predict_bounds = {
-        container_bounuds.x + container_bounuds.width - result_predict_bounds_size.x,
-        container_bounuds.y + container_bounuds.height / 2 - result_predict_bounds_size.y / 2,
-        result_predict_bounds_size.x,
-        result_predict_bounds_size.y
-    };
+    Rectangle result_predict_bounds = { 0 };
+    result_predict_bounds.width  = container_bounds.width / 8;
+    result_predict_bounds.height = container_bounds.height / 3;
+    result_predict_bounds.x = container_bounds.x + container_bounds.width - result_predict_bounds.width;
+    result_predict_bounds.y = container_bounds.y + container_bounds.height / 2 - result_predict_bounds.height / 2;
 
     // result connection
     const float result_connection_height = result_predict_bounds.height / 3;
     const float result_connection_offset = result_connection_height / DR_APPLICATION_DIGITS_COUNT;
-    Vector2 result_connection = {
-        result_predict_bounds.x,
-        result_predict_bounds.y + result_predict_bounds.height / 2 - result_connection_height / 2
-    };
+    Vector2 result_connection = { 0 };
+    result_connection.x = result_predict_bounds.x;
+    result_connection.y = result_predict_bounds.y + result_predict_bounds.height / 2 - result_connection_height / 2;
 
     // circle column
     const float circle_radius = 20;
     const float circle_margin = 4;
     const float circle_column_height = (circle_radius * 2 + circle_margin) * (DR_APPLICATION_DIGITS_COUNT - 1);
     const float dist_from_canvas_to_result = result_predict_bounds.x - (canvas_bounds.x + canvas_bounds.width);
-    const Vector2 circle_column_pos = {
-        (canvas_bounds.x + canvas_bounds.width) + dist_from_canvas_to_result / 2,
-        container_bounuds.y + container_bounuds.height / 2 - circle_column_height / 2
-    };
+    Vector2 circle_column_pos = { 0 };
+    circle_column_pos.x = (canvas_bounds.x + canvas_bounds.width) + dist_from_canvas_to_result / 2;
+    circle_column_pos.y = container_bounds.y + container_bounds.height / 2 - circle_column_height / 2;
 
     // message box
-    const Vector2 message_box_size = {
-        work_area.width / 1.6,
-        work_area.height / 4
-    };
-    const Rectangle message_box_bounds = {
-        work_area.x + work_area.width / 2 - message_box_size.x / 2,
-        work_area.y + work_area.height / 2 - message_box_size.y / 2,
-        message_box_size.x,
-        message_box_size.y
-    };
+    Rectangle message_box_bounds = { 0 };
+    message_box_bounds.width  = work_area.width / 1.6;
+    message_box_bounds.height = work_area.height / 4;
+    message_box_bounds.x = work_area.x + work_area.width / 2 - message_box_bounds.width / 2;
+    message_box_bounds.y = work_area.y + work_area.height / 2 - message_box_bounds.height / 2;
+
+    // prediction text
+    const size_t prediction_font_size = 50;
+    const char* prediction_text = prediction_show ? TextFormat("%d", prediction_predicted_digit) : "?";
+    const Vector2 prediction_text_size = MeasureTextEx(GetFontDefault(), prediction_text, prediction_font_size, 0);
+    Vector2 prediction_text_pos = { 0 };
+    prediction_text_pos.x = result_predict_bounds.x + result_predict_bounds.width / 2 - prediction_text_size.x / 2;
+    prediction_text_pos.y = result_predict_bounds.y + result_predict_bounds.height / 2 - prediction_text_size.y / 2;
 
     // gui
-    //const bool neural_network_trained = neural_network.layers_count > 0;
-
     if (user_neural_network.layers_count == 0) {
         if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse_pos, check_box_my_nn_bounds)) {
             prediction_attempt_to_select_my_neural_network_failed = true;
@@ -1101,10 +1061,9 @@ void dr_application_prediction_tab() {
 
     for (size_t i = 0; i < DR_APPLICATION_DIGITS_COUNT; ++i) {
         const DR_FLOAT_TYPE current_prob = prediction_probs[i];
-        const Vector2 circle_pos = {
-            circle_column_pos.x,
-            circle_column_pos.y + (circle_radius * 2 + circle_margin) * i
-        };
+        Vector2 circle_pos = { 0 };
+        circle_pos.x = circle_column_pos.x;
+        circle_pos.y = circle_column_pos.y + (circle_radius * 2 + circle_margin) * i;
 
         // connections: canvas - circles
         const float connection_thick = 2.0f + current_prob * 3.0f;
@@ -1112,23 +1071,21 @@ void dr_application_prediction_tab() {
         const Color color = { color_val, color_val, color_val, 255 };
         DrawLineEx(canvas_connection_point, circle_pos, connection_thick, color);
         canvas_connection_point.y += canvas_connection_offset;
-        const Vector2 text_prob_size = {
-            30,
-            15
-        };
-        const Rectangle text_prob_bounds = {
-            canvas_connection_point.x + (circle_pos.x - canvas_connection_point.x) / 2 - text_prob_size.x / 2,
-            canvas_connection_point.y + (circle_pos.y - canvas_connection_point.y) / 2 - text_prob_size.y / 2,
-            text_prob_size.x,
-            text_prob_size.y
-        };
+
+        Rectangle text_prob_bounds = { 0 };
+        text_prob_bounds.width  = 30;
+        text_prob_bounds.height = 15;
+        text_prob_bounds.x =
+            canvas_connection_point.x + (circle_pos.x - canvas_connection_point.x) / 2 - text_prob_bounds.width / 2;
+        text_prob_bounds.y =
+            canvas_connection_point.y + (circle_pos.y - canvas_connection_point.y) / 2 - text_prob_bounds.height / 2;
+
         const char* prob_text = prediction_show ? TextFormat("%.2f", prediction_probs[i]) : "?";
         GuiDummyRec(text_prob_bounds, prob_text);
 
         // connection: circles - result
         DrawLineEx(circle_pos, result_connection, connection_thick, color);
         result_connection.y += result_connection_offset;
-
 
         // circles
         DrawCircleV(circle_pos, circle_radius, BLACK);
@@ -1167,13 +1124,6 @@ void dr_application_prediction_tab() {
         }
     }
 
-    const size_t prediction_font_size = 50;
-    const char* prediction_text = prediction_show ? TextFormat("%d", prediction_predicted_digit) : "?";
-    const Vector2 prediction_text_size = MeasureTextEx(GetFontDefault(), prediction_text, prediction_font_size, 0);
-    const Vector2 prediction_text_pos = {
-        result_predict_bounds.x + result_predict_bounds.width / 2 - prediction_text_size.x / 2,
-        result_predict_bounds.y + result_predict_bounds.height / 2 - prediction_text_size.y / 2
-    };
     DrawText(prediction_text, prediction_text_pos.x, prediction_text_pos.y, prediction_font_size, WHITE);
 
     if (prediction_attempt_to_select_my_neural_network_failed) {
