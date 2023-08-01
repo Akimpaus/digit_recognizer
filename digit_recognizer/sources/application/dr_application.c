@@ -556,7 +556,8 @@ dr_thread_function_result_t DR_WINAPI dr_application_train_neural_network_other_
 
 void dr_application_start_train_neural_network_other_thread() {
     training_thread_handle = dr_thread_create(&training_thread_id, dr_application_train_neural_network_other_thread);
-    DR_ASSERT_MSG(!training_thread_handle, "error creating a thread for training a neural network in application");
+    DR_ASSERT_MSG(dr_check_thread_handle(training_thread_handle),
+        "error creating a thread for training a neural network in application");
 }
 
 void dr_application_training_tab_hidden_layers_list_view(const Rectangle list_view_bounds, const bool removed) {

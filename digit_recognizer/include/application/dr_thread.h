@@ -25,6 +25,8 @@ typedef dr_thread_function_result_t(DR_WINAPI *dr_thread_function_t)(void*);
 
 dr_thread_handle_t dr_thread_create(dr_thread_id_t* thread_id, dr_thread_function_t thread_function);
 
+bool dr_check_thread_handle(const dr_thread_handle_t thread_handle);
+
 bool dr_thread_join(dr_thread_handle_t thread_handle, dr_thread_id_t thread_id);
 
 bool dr_thread_close(dr_thread_handle_t thread_handle);

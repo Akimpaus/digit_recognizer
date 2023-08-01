@@ -29,11 +29,11 @@ file(GLOB_RECURSE SOURCES sources/*.c)
 list(REMOVE_ITEM SOURCES sources/main.c)
 add_library(${PROJECT_LIB_NAME} ${SOURCES})
 target_include_directories(${PROJECT_LIB_NAME} PUBLIC
-  include
-  third_party/include
+    include
+    third_party/include
   )
 target_link_libraries(${PROJECT_LIB_NAME} PUBLIC
-  raylib
+    raylib
   )
 
 if (UNIX)
