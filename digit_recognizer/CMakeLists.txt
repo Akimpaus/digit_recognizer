@@ -31,27 +31,25 @@ add_library(${PROJECT_LIB_NAME} ${SOURCES})
 target_include_directories(${PROJECT_LIB_NAME} PUBLIC
     include
     third_party/include
-  )
-target_link_libraries(${PROJECT_LIB_NAME} PUBLIC
-    raylib
-  )
-
-if (UNIX)
-  target_link_libraries(${PROJECT_LIB_NAME} PUBLIC
-    m
-  )
-endif()
+)
+target_link_libraries(${PROJECT_LIB_NAME} PUBLIC raylib)
 
 # Project execuatable
-configure_file(assets/dataset.bin ${CMAKE_CURRENT_BINARY_DIR}/dataset.bin COPYONLY)
 add_executable(${PROJECT_NAME} sources/main.c)
-target_link_libraries(${PROJECT_NAME} PUBLIC
-  ${PROJECT_LIB_NAME}
-  )
+target_link_libraries(${PROJECT_NAME} PUBLIC ${PROJECT_LIB_NAME})
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_CURRENT_SOURCE_DIR}/assets
+    $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
+)
 
 # OS specific
+if (UNIX)
+  target_link_libraries(${PROJECT_LIB_NAME} PUBLIC m)
+endif()
+
 if (APPLE)
-    target_link_libraries(${PROJECT_NAME} "-framework IOKit")
-    target_link_libraries(${PROJECT_NAME} "-framework Cocoa")
-    target_link_libraries(${PROJECT_NAME} "-framework OpenGL")
+  target_link_libraries(${PROJECT_NAME} "-framework IOKit")
+  target_link_libraries(${PROJECT_NAME} "-framework Cocoa")
+  target_link_libraries(${PROJECT_NAME} "-framework OpenGL")
 endif()
