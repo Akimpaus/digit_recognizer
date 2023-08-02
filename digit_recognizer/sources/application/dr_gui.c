@@ -1,6 +1,7 @@
 #include <application/dr_gui.h>
 #define RAYGUI_IMPLEMENTATION
 #include <raygui.h>
+#include <raymath.h>
 #include <ctype.h>
 
 void dr_gui_dim(const Rectangle bounds) {
@@ -49,7 +50,12 @@ Vector2 dr_gui_canvas(const Rectangle bounds, const float button_clear_height, R
                 last_point = mouse_pos;
             }
             const Color line_color = mouse_left_down ? draw_color : erase_color;
-            DrawLineEx(mouse_pos, last_point, 1.5, line_color);
+            const float line_thick = 1.5;
+            if (Vector2Distance(last_point, mouse_pos) >= line_thick) {
+                DrawLineEx(last_point, mouse_pos, line_thick + 1, line_color);
+            } else {
+                DrawCircleV(mouse_pos, line_thick, line_color);
+            }
             last_point = mouse_pos;
         } else if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) || IsMouseButtonReleased(MOUSE_BUTTON_RIGHT)) {
             last_point.x = -1;

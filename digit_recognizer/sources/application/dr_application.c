@@ -26,7 +26,7 @@
     DR_APPLICATION_CANVAS_RESOLUTION_HEIGHT)
 #define DR_APPLICATION_CANVAS_WIDTH               300
 #define DR_APPLICATION_CANVAS_HEIGHT              300
-#define DR_APPLICATION_CANVAS_DRAW_COLOR          WHITE
+#define DR_APPLICATION_CANVAS_DRAW_COLOR          CLITERAL(Color){ 255, 255, 255, 230 }
 #define DR_APPLICATION_CANVAS_ERASE_COLOR         BLACK
 #define DR_APPLICATION_CANVAS_CLEAR_BUTTON_HEIGHT 30
 #define DR_APPLICATION_CANVAS_WINDOW_HEIGHT       DR_APPLICATION_CANVAS_HEIGHT +\
@@ -110,7 +110,7 @@ void dr_application_canvas_get_pixels(const RenderTexture2D canvas, DR_FLOAT_TYP
     for (size_t y = DR_APPLICATION_CANVAS_RESOLUTION_HEIGHT; y > 0; --y) {
         for (size_t x = 0; x < DR_APPLICATION_CANVAS_RESOLUTION_WIDTH; ++x) {
             const Color pixel_color = GetImageColor(canvas_image, x, y - 1);
-            *pixels = (pixel_color.r + pixel_color.g + pixel_color.b) > 0 ? 1 : 0;
+            *pixels = (pixel_color.r + pixel_color.g + pixel_color.b) / (255.0f * 3.0f);
             ++pixels;
         }
     }
@@ -153,15 +153,21 @@ bool dr_application_dataset_load_mnist(const size_t count) {
         return false;
     }
 
-    int32_t header[3] = { 0 };
+    uint32_t header[3] = { 0 };
     fread(header, sizeof(header), 1, file);
+
+    if (count > header[0]) {
+        dr_print_error("Attempt to load more MNIST images than there are");
+        fclose(file);
+        return false;
+    }
 
     if (header[1] != DR_APPLICATION_CANVAS_RESOLUTION_HEIGHT ||
         header[2] != DR_APPLICATION_CANVAS_RESOLUTION_WIDTH) {
         dr_print_error("Mismatch application canvas resolution and MNSIT images resolution\n");
+        fclose(file);
         return false;
     }
-    DR_ASSERT_MSG(count <= header[0], "Attempt to load more MNIST images than there are");
 
     const size_t new_digits_count_total = dr_application_dataset_add_memory(count);
     DR_FLOAT_TYPE* new_pixels = dataset_digits_pixels + dataset_digits_count_total * DR_APPLICATION_CANVAS_PIXELS_COUNT;
@@ -172,7 +178,7 @@ bool dr_application_dataset_load_mnist(const size_t count) {
     for (; new_pixels != new_pixels_end; ++new_pixels) {
         unsigned char pixel = 0;
         fread(&pixel, sizeof(unsigned char), 1, file);
-        *new_pixels = (float)pixel;
+        *new_pixels = (float)pixel / 255.0f;
     }
 
     fseek(file, sizeof(header) + sizeof(unsigned char) * header[0] * DR_APPLICATION_CANVAS_PIXELS_COUNT, SEEK_SET);
@@ -188,6 +194,7 @@ bool dr_application_dataset_load_mnist(const size_t count) {
     dataset_digits_count_total = new_digits_count_total;
 
     fclose(file);
+
     return true;
 }
 
@@ -1257,4 +1264,104 @@ void dr_application_close() {
 
     // raylib window
     CloseWindow();
+}
+
+bool dr_is_cpu_low_endian() {
+    const int16_t number = 1;
+    return ((const unsigned char*)&number)[0] == 1;
+}
+
+void dr_swap_bytes(unsigned char* left, unsigned char* right) {
+    unsigned char temp = *left;
+    *left  = *right;
+    *right = temp;
+}
+
+uint32_t dr_reverse_bytes_32(uint32_t value) {
+    unsigned char* bytes = (unsigned char*)&value;
+    dr_swap_bytes(bytes, bytes + 3);
+    dr_swap_bytes(bytes + 1, bytes + 2);
+    return *((uint32_t*)bytes);
+}
+
+bool dr_application_mnist_to_dataset(const char* images, const char* labels, const char* dataset) {
+    const bool cpu_low_endian = dr_is_cpu_low_endian();
+
+    FILE* file_dataset = fopen(dataset, "wb");
+    if (!file_dataset) {
+        dr_print_error("Open file dataset error\n");
+        return false;
+    }
+
+    // IMAGES
+    FILE* file_images = fopen(images, "rb");
+    if (!file_images) {
+        dr_print_error("Open file images error\n");
+        fclose(file_dataset);
+        return false;
+    }
+
+    // read images header
+    uint32_t file_images_header[4] = { 0 };
+    fread(file_images_header, sizeof(file_images_header), 1, file_images);
+    if (cpu_low_endian) {
+        for (size_t i = 0; i < DR_ARRAY_LENGTH(file_images_header); ++i) {
+            file_images_header[i] = dr_reverse_bytes_32(file_images_header[i]);
+        }
+    }
+    const uint32_t number_of_images  = file_images_header[1];
+    const uint32_t number_of_rows    = file_images_header[2];
+    const uint32_t number_of_columns = file_images_header[3];
+
+    // write dataset header
+    fwrite(&number_of_images, sizeof(uint32_t), 1, file_dataset);
+    fwrite(&number_of_rows, sizeof(uint32_t), 1, file_dataset);
+    fwrite(&number_of_columns, sizeof(uint32_t), 1, file_dataset);
+
+    // read images pixels
+    const size_t number_of_pixels_total = number_of_rows * number_of_columns * number_of_images;
+    const size_t pixels_buffer_size = sizeof(unsigned char) * number_of_pixels_total;
+    unsigned char* pixels_buffer = (unsigned char*)DR_MALLOC(pixels_buffer_size);
+    fread(pixels_buffer, pixels_buffer_size, 1, file_images);
+    fclose(file_images);
+
+    // write pixels to dataset
+    fwrite(pixels_buffer, pixels_buffer_size, 1, file_dataset);
+    DR_FREE(pixels_buffer);
+
+    // LABELS
+    FILE* file_labels = fopen(labels, "rb");
+    if (!file_labels) {
+        dr_print_error("Open file labels error\n");
+        fclose(file_dataset);
+        return false;
+    }
+
+    // read labels header
+    uint32_t file_labels_header[2] = { 0 };
+    fread(file_labels_header, sizeof(file_labels_header), 1, file_labels);
+    if (cpu_low_endian) {
+        for (size_t i = 0; i < 2; ++i) {
+            file_labels_header[i] = dr_reverse_bytes_32(file_labels_header[i]);
+        }
+    }
+    if (number_of_images != file_labels_header[1]) {
+        dr_print_error("the number of elements in file labels does not equal to the number of images in file images");
+        fclose(file_labels);
+        fclose(file_dataset);
+        return false;
+    }
+
+    // read labels
+    const size_t labels_buffer_size = sizeof(unsigned char) * number_of_images;
+    unsigned char* labels_buffer = (unsigned char*)DR_MALLOC(labels_buffer_size);
+    fread(labels_buffer, labels_buffer_size, 1, file_labels);
+    fclose(file_labels);
+
+    // write labels to dataset
+    fwrite(labels_buffer, labels_buffer_size, 1, file_dataset);
+    DR_FREE(labels_buffer);
+    fclose(file_dataset);
+
+    return true;
 }
