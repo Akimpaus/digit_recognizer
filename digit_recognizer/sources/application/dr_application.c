@@ -4,7 +4,7 @@
 #include <neural_network/dr_neural_network.h>
 #include <limits.h>
 
-#define DR_APPLICATION_SAVE_USER_NEURAL_NETWORK
+// #define DR_APPLICATION_SAVE_USER_NEURAL_NETWORK
 #define DR_APPLICATION_SAVE_USER_NEURAL_NETWORK_PATH       "user_neural_network.txt"
 #define DR_APPLICATION_LOAD_PRETRAINED_NEURAL_NETWORK_PATH "assets/pretrained_neural_network.txt"
 
