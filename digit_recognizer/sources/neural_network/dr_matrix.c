@@ -206,15 +206,27 @@ dr_matrix dr_matrix_multiplication_create(const dr_matrix left, const dr_matrix 
 }
 
 void dr_matrix_unchecked_dot_write(const dr_matrix left, const dr_matrix right, dr_matrix result) {
-    for (size_t i = 0; i < result.width; ++i) {
-        for (size_t j = 0; j < result.height; ++j) {
-            DR_FLOAT_TYPE sum = 0;
-            for (size_t k = 0; k < left.width; ++k) {
-                const DR_FLOAT_TYPE left_val  = dr_matrix_unchecked_get_element(left, k, j);
-                const DR_FLOAT_TYPE right_val = dr_matrix_unchecked_get_element(right, i, k);
-                sum += left_val * right_val;
+    // the method was taken from the article: https://habr.com/ru/articles/359272/
+
+    const size_t M = left.height;
+    const size_t N = right.width;
+    const size_t K = left.width;
+
+    DR_FLOAT_TYPE* A = left.elements;
+    DR_FLOAT_TYPE* B = right.elements;
+    DR_FLOAT_TYPE* C = result.elements;
+
+    for (size_t i = 0; i < M; ++i) {
+        DR_FLOAT_TYPE* c = C + i * N;
+        for (size_t j = 0; j < N; ++j) {
+            c[j] = 0;
+        }
+        for (size_t k = 0; k < K; ++k) {
+            const DR_FLOAT_TYPE* b = B + k * N;
+            const DR_FLOAT_TYPE a = A[i * K + k];
+            for (size_t j = 0; j < N; ++j) {
+                c[j] += a * b[j];
             }
-            dr_matrix_unchecked_set_element(result, i, j, sum);
         }
     }
 }
