@@ -522,7 +522,7 @@ void dr_application_train_neural_network_current_data() {
 
     DR_FLOAT_TYPE real_output[DR_APPLICATION_DIGITS_COUNT]     = { 0 };
     DR_FLOAT_TYPE expected_output[DR_APPLICATION_DIGITS_COUNT] = { 0 };
-    DR_FLOAT_TYPE error_output[DR_APPLICATION_DIGITS_COUNT] = { 0 };
+    DR_FLOAT_TYPE error_output[DR_APPLICATION_DIGITS_COUNT]    = { 0 };
     expected_output[dataset_digits_labels[training_current_dataset_index]] = 1;
     dr_neural_network_set_input(user_neural_network,
         dataset_digits_pixels + training_current_dataset_index * DR_APPLICATION_CANVAS_PIXELS_COUNT);
