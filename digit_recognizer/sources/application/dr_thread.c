@@ -35,3 +35,44 @@ bool dr_thread_close(dr_thread_handle_t thread_handle) {
     return true;
 #endif // _WIN32
 }
+
+dr_mutex_t dr_mutex_create() {
+#ifdef _WIN32
+    return CreateMutex(NULL, FALSE, NULL);
+#else
+    const dr_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+    return mutex;
+#endif // _WIN32
+}
+
+bool dr_check_mutex(const dr_mutex_t mutex) {
+#ifdef _WIN32
+    return mutex != NULL;
+#else
+    return true;
+#endif // _WIN32
+}
+
+bool dr_mutex_lock(dr_mutex_t* mutex) {
+#ifdef _WIN32
+    return WaitForSinglePbject(*mutex, INFINITE) == WAIT_OBJECT_0;
+#else
+    return pthread_mutex_lock(mutex) == 0;
+#endif // _WIN32
+}
+
+bool dr_mutex_unlock(dr_mutex_t* mutex) {
+#ifdef _WIN32
+    return ReleaseMutex(*mutex);
+#else
+    return pthread_mutex_unlock(mutex) == 0;
+#endif // _WIN32
+}
+
+bool dr_mutex_close(dr_mutex_t mutex) {
+#ifdef _WIN32
+    return CloseHandle(mutex);
+#else
+    return true;
+#endif // _WIN32
+}

@@ -84,6 +84,7 @@ DR_FLOAT_TYPE training_error          = 0;
 size_t training_current_dataset_index = 0;
 dr_thread_id_t training_thread_id         = { 0 };
 dr_thread_handle_t training_thread_handle = 0;
+dr_mutex_t training_mutex                 = { 0 };
 
 // prediction
 RenderTexture2D prediction_canvas_rtexture = { 0 };
@@ -154,7 +155,7 @@ bool dr_application_dataset_load_mnist(const size_t count) {
     }
 
     uint32_t header[3] = { 0 };
-    fread(header, sizeof(header), 1, file);
+    (void) fread(header, sizeof(header), 1, file);
 
     if (count > header[0]) {
         dr_print_error("Attempt to load more MNIST images than there are");
@@ -177,7 +178,7 @@ bool dr_application_dataset_load_mnist(const size_t count) {
     const DR_FLOAT_TYPE* new_pixels_end = new_pixels + pixels_count_total;
     for (; new_pixels != new_pixels_end; ++new_pixels) {
         unsigned char pixel = 0;
-        fread(&pixel, sizeof(unsigned char), 1, file);
+        (void) fread(&pixel, sizeof(unsigned char), 1, file);
         *new_pixels = (float)pixel / 255.0f;
     }
 
@@ -186,7 +187,7 @@ bool dr_application_dataset_load_mnist(const size_t count) {
     const unsigned char* new_results_end = new_results + count;
     for (; new_results != new_results_end; ++new_results) {
         unsigned char digit = 0;
-        fread(&digit, sizeof(unsigned char), 1, file);
+        (void) fread(&digit, sizeof(unsigned char), 1, file);
         *new_results = digit;
         ++dataset_digits_count[digit];
     }
@@ -533,7 +534,9 @@ void dr_application_train_neural_network_current_data() {
         error_output[i] = expected_output[i] - real_output[i];
         error_sum += error_output[i];
     }
+    dr_mutex_lock(&training_mutex);
     training_error = fabs(error_sum);
+    dr_mutex_unlock(&training_mutex);
     dr_neural_network_back_propagation(user_neural_network, training_learning_rate, error_output);
 }
 
@@ -1220,6 +1223,8 @@ void dr_application_create() {
     dr_application_canvas_clear(dataset_canvas_rtexture);
 
     // training
+    training_mutex = dr_mutex_create();
+    DR_ASSERT_MSG(dr_check_mutex(training_mutex), "error to create training mutex");
     dr_application_training_add_hidden_layer(DR_APPLICATION_CANVAS_PIXELS_COUNT, DR_APPLICATION_TRAINING_SIGMOID_STR);
     dr_application_training_add_hidden_layer(DR_APPLICATION_CANVAS_PIXELS_COUNT, DR_APPLICATION_TRAINING_SIGMOID_STR); 
 
@@ -1244,7 +1249,11 @@ void dr_application_close() {
     }
 
     if (training_thread_handle && !dr_thread_close(training_thread_handle)) {
-        dr_print_error("thread close error in the application");
+        dr_print_error("Training thread close error in the application");
+    }
+
+    if (!dr_mutex_close(training_mutex)) {
+        dr_print_error("Training mutex close error in the application");
     }
 
     dr_application_training_hidden_layers_info_clear();
@@ -1303,7 +1312,7 @@ bool dr_application_mnist_to_dataset(const char* images, const char* labels, con
 
     // read images header
     uint32_t file_images_header[4] = { 0 };
-    fread(file_images_header, sizeof(file_images_header), 1, file_images);
+    (void) fread(file_images_header, sizeof(file_images_header), 1, file_images);
     if (cpu_low_endian) {
         for (size_t i = 0; i < DR_ARRAY_LENGTH(file_images_header); ++i) {
             file_images_header[i] = dr_reverse_bytes_32(file_images_header[i]);
@@ -1322,7 +1331,7 @@ bool dr_application_mnist_to_dataset(const char* images, const char* labels, con
     const size_t number_of_pixels_total = number_of_rows * number_of_columns * number_of_images;
     const size_t pixels_buffer_size = sizeof(unsigned char) * number_of_pixels_total;
     unsigned char* pixels_buffer = (unsigned char*)DR_MALLOC(pixels_buffer_size);
-    fread(pixels_buffer, pixels_buffer_size, 1, file_images);
+    (void) fread(pixels_buffer, pixels_buffer_size, 1, file_images);
     fclose(file_images);
 
     // write pixels to dataset
@@ -1339,14 +1348,14 @@ bool dr_application_mnist_to_dataset(const char* images, const char* labels, con
 
     // read labels header
     uint32_t file_labels_header[2] = { 0 };
-    fread(file_labels_header, sizeof(file_labels_header), 1, file_labels);
+    (void) fread(file_labels_header, sizeof(file_labels_header), 1, file_labels);
     if (cpu_low_endian) {
         for (size_t i = 0; i < 2; ++i) {
             file_labels_header[i] = dr_reverse_bytes_32(file_labels_header[i]);
         }
     }
     if (number_of_images != file_labels_header[1]) {
-        dr_print_error("the number of elements in file labels does not equal to the number of images in file images");
+        dr_print_error("The number of elements in file labels does not equal to the number of images in file images");
         fclose(file_labels);
         fclose(file_dataset);
         return false;
@@ -1355,7 +1364,7 @@ bool dr_application_mnist_to_dataset(const char* images, const char* labels, con
     // read labels
     const size_t labels_buffer_size = sizeof(unsigned char) * number_of_images;
     unsigned char* labels_buffer = (unsigned char*)DR_MALLOC(labels_buffer_size);
-    fread(labels_buffer, labels_buffer_size, 1, file_labels);
+    (void) fread(labels_buffer, labels_buffer_size, 1, file_labels);
     fclose(file_labels);
 
     // write labels to dataset

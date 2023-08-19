@@ -8,11 +8,13 @@
   typedef uint32_t dr_thread_id_t;
   typedef uint32_t dr_thread_function_result_t;
   typedef void*    dr_thread_handle_t;
+  typedef void*    dr_mutex_t;
 #else
   #include <pthread.h>
-  typedef pthread_t dr_thread_id_t;
-  typedef void*     dr_thread_function_result_t;
-  typedef int       dr_thread_handle_t;
+  typedef pthread_t       dr_thread_id_t;
+  typedef void*           dr_thread_function_result_t;
+  typedef int             dr_thread_handle_t;
+  typedef pthread_mutex_t dr_mutex_t;
 #endif // _WIN32
 
 #ifdef _WIN32
@@ -30,5 +32,15 @@ bool dr_check_thread_handle(const dr_thread_handle_t thread_handle);
 bool dr_thread_join(dr_thread_handle_t thread_handle, dr_thread_id_t thread_id);
 
 bool dr_thread_close(dr_thread_handle_t thread_handle);
+
+dr_mutex_t dr_mutex_create();
+
+bool dr_check_mutex(const dr_mutex_t mutex);
+
+bool dr_mutex_lock(dr_mutex_t* mutex);
+
+bool dr_mutex_unlock(dr_mutex_t* mutex);
+
+bool dr_mutex_close(dr_mutex_t mutex);
 
 #endif // DR_THREAD_H
