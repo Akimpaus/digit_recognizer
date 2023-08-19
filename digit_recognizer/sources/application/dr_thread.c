@@ -55,7 +55,7 @@ bool dr_check_mutex(const dr_mutex_t mutex) {
 
 bool dr_mutex_lock(dr_mutex_t* mutex) {
 #ifdef _WIN32
-    return WaitForSinglePbject(*mutex, INFINITE) == WAIT_OBJECT_0;
+    return WaitForSingleObject(*mutex, INFINITE) == WAIT_OBJECT_0;
 #else
     return pthread_mutex_lock(mutex) == 0;
 #endif // _WIN32
